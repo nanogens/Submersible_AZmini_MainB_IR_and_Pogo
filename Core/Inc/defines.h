@@ -20,24 +20,6 @@
 // ============================================
 
 
-// ============================================
-// Interface Board I2C Definitions
-// ============================================
-#define INTF_BOARD_I2C_ADDR    0x7F   // 7-bit address
-#define INTF_BOARD_I2C_ADDR_HAL (INTF_BOARD_I2C_ADDR << 1)  // 8-bit address = 0xFE
-
-// Register addresses (matches Interface Board's i2c_slave.h)
-#define INTF_REG_PRESSURE_RAW  0x00   // 3 bytes
-#define INTF_REG_TEMP_RAW      0x03   // 3 bytes
-#define INTF_REG_AVDD_RAW      0x06   // 3 bytes
-#define INTF_REG_STATUS        0x09   // 1 byte
-#define INTF_REG_DEVICE_ID     0x0A   // 1 byte
-
-// Enable Interface Board implementation (comment out to disable)
-//#define INTERFACE_BOARD_IMPLEMENTATION
-// ============================================
-
-
 // Debug Print
 #define DEBUG_SENSOR 0 // 1 to show ascii readouts in console, 0 to not
 
@@ -199,13 +181,6 @@
 #define SENSOR_CONDUCTIVITY_ARRAY 6
 #define SENSOR_RESERVED_ARRAY 6
 
-// I2C Functionality
-
-//==============================================================================
-// Device ID
-//==============================================================================
-#define SLAVE_DEVICE_ID_VALUE   0x21
-
 // ============================================
 // Sensor Type Selection (Hardcoded for now)
 // ============================================
@@ -213,20 +188,10 @@
 #define SENSOR_TYPE_INTERFACE_BOARD  2
 
 // Select the active sensor (change this to switch)
-#define SENSOR_TYPE  SENSOR_TYPE_TE_INTEGRATED // SENSOR_TYPE_INTERFACE_BOARD
+#define SENSOR_TYPE  SENSOR_TYPE_INTERFACE_BOARD // SENSOR_TYPE_TE_INTEGRATED
 
-// ============================================
-// Interface Board I2C Definitions
-// ============================================
-#define INTF_BOARD_I2C_ADDR    0x7F   // 7-bit address (0xFE << 1 in HAL)
-#define INTF_BOARD_I2C_ADDR_HAL (INTF_BOARD_I2C_ADDR << 1)  // 0xFE
-
-// Register addresses (matches Interface Board's i2c_slave.h)
-#define INTF_REG_PRESSURE_RAW  0x00   // 3 bytes
-#define INTF_REG_TEMP_RAW      0x03   // 3 bytes
-#define INTF_REG_AVDD_RAW      0x06   // 3 bytes
-#define INTF_REG_STATUS        0x09   // 1 byte
-#define INTF_REG_DEVICE_ID     0x0A   // 1 byte
+// Enable Interface Board implementation (comment out to disable)
+#define INTERFACE_BOARD_IMPLEMENTATION
 
 
 // Messages ========================================================
@@ -409,3 +374,5 @@
 
 #define BOOTLOADER_TRANSMITDATA_RESP_MSGID   0x65
 #define BOOTLOADER_TRANSMITDATA_RESP_MSGLGT  0x0E
+
+

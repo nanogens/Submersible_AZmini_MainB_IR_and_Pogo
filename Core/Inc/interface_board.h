@@ -25,6 +25,9 @@
 //==============================================================================
 #define SLAVE_DEVICE_ID_VALUE  0x21
 
+// Forward declaration
+extern void SendString(uint8_t* str);
+
 //==============================================================================
 // Extern declarations
 //==============================================================================
@@ -78,7 +81,7 @@ uint8_t INTF_Init(void)
 
     // Send register address
     if (HAL_I2C_Master_Transmit(&hi2c1, INTF_BOARD_I2C_ADDR_HAL, tx, 1, 100) != HAL_OK) {
-        SendString((uint8_t*)"Transmit failed\r\n");
+    	SendString((uint8_t*)"Transmit failed\r\n");
         return 0;
     }
 

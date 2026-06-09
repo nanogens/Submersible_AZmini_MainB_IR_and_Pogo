@@ -89,11 +89,11 @@ volatile uint8_t ignore_echo_usart2;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_ADC_Init(void);
-static void MX_I2C1_Init(void);
 static void MX_RTC_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_USART2_IRDA_Init(void);
+static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -224,8 +224,8 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
   */
 int main(void)
 {
+    /* USER CODE BEGIN 1 */
 
-  /* USER CODE BEGIN 1 */
   uint8_t msg = 0;
   uint8_t test_write[] = {0xDE, 0xAD, 0xBE, 0xEF};
   uint8_t test_read[4] = {0};
@@ -249,23 +249,23 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
+
+
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_ADC_Init();
-  MX_I2C1_Init();
   MX_RTC_Init();
   MX_SPI1_Init();
   MX_TIM2_Init();
-  MX_USART2_IRDA_Init();
+    MX_USART2_IRDA_Init();
+  MX_I2C1_Init();
+  
+  // Now all peripherals are initialized -- safe to enable interrupts
+  __enable_irq();
+
   /* USER CODE BEGIN 2 */
-  for (int i=0; i<20; i++) {
-      HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_SET);
-      HAL_Delay(50);
-      HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
-      HAL_Delay(50);
-  }
 
 #ifdef IR_USART2_SEL
     pActiveIrda = &hirda2;
@@ -273,8 +273,15 @@ int main(void)
     pActiveUart = &hlpuart1;
 #endif
 
+  HAL_GPIO_WritePin(LED_EN_GPIO_Port, LED_EN_Pin, GPIO_PIN_RESET);
+
   HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
+
+  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
+  HAL_Delay(100);
+
+  HAL_GPIO_WritePin(CS_MEM_0_BAR_GPIO_Port, CS_MEM_0_BAR_Pin, GPIO_PIN_SET);
 
   for (int i=0; i<20; i++) {
       HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_SET);
@@ -282,12 +289,6 @@ int main(void)
       HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
       HAL_Delay(50);
   }
-
-  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
-  HAL_Delay(100);
-
-  HAL_GPIO_WritePin(CS_MEM_0_BAR_GPIO_Port, CS_MEM_0_BAR_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LED_EN_GPIO_Port, LED_EN_Pin, GPIO_PIN_RESET);
 
   DE_RE_DISABLE();
   rx_index = 0;
@@ -307,7 +308,7 @@ int main(void)
 #ifdef INTERFACE_BOARD_IMPLEMENTATION
   SendString((uint8_t*)"\r\n=== Starting I2C Test ===\r\n");
   HAL_Delay(1000);
-  //I2C_Scan();
+  I2C_Scan();
   Test_InterfaceBoard();
 #endif
 
@@ -360,7 +361,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLLMUL_8;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLLMUL_4;
   RCC_OscInitStruct.PLL.PLLDIV = RCC_PLLDIV_2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -376,7 +377,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
   {
     Error_Handler();
   }
@@ -463,7 +464,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.Timing = 0xD000C7FF;
+  hi2c1.Init.Timing = 0x6000C7FF;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
