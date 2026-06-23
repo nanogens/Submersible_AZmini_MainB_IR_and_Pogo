@@ -22,6 +22,15 @@ void Instrument_StoreData(void);
 void Time_Resp(void);
 void Time_StoreData(void);
 
+void Sampling_Resp(void);
+void Sampling_Set(void);
+
+void Activation_Resp(void);
+void Activation_Set(void);
+
+void Notes_Resp(void);
+void Notes_Set(void);
+
 void Log_ShowFiles_Resp(void);
 
 void Log_ReadSpecificFile_Set(void);
@@ -69,12 +78,15 @@ void ProcessMsg(void)
     	        //RTC_ReadTime();
     	        break;
       case SAMPLING_QUERY_MSGID:
+    	        Sampling_Resp();
     	        Lpuart1shadow.messageid = 0;
     	        break;
       case ACTIVATION_QUERY_MSGID:
+    	        Activation_Resp();
     	        Lpuart1shadow.messageid = 0;
     	        break;
       case NOTES_QUERY_MSGID:
+    	        Notes_Resp();
     	        Lpuart1shadow.messageid = 0;
     	        break;
       case CLOUD_QUERY_MSGID:
@@ -97,6 +109,22 @@ void ProcessMsg(void)
     	        Time_Resp();
                 Lpuart1shadow.messageid = 0;
                 break;
+
+      case SAMPLING_SET_MSGID:
+    	        Sampling_Set();
+    	        Sampling_Resp();
+                Lpuart1shadow.messageid = 0;
+    	        break;
+
+      case ACTIVATION_SET_MSGID:
+    	        Activation_Set();
+    	        Activation_Resp();
+    	        break;
+
+      case NOTES_SET_MSGID:
+    	        Notes_Set();
+    	        Notes_Resp();
+    	        break;
 
       // Logging
       case LOG_SHOWFILES_QUERY_MSGID:  // Retrieve basic info on all files
@@ -125,11 +153,11 @@ void ProcessMsg(void)
     	        DebugSensor();
     	        if(Counter.streaming == 0)
     	        {
-      	  	      Submersible_Info_Resp();
+      	  	      Submersible_Info_Resp(); //
     	        }
     	        else
     	        {
-          	  	  CTD_Reading_Processed_Resp();
+          	  	  CTD_Reading_Processed_Resp();  // Sends back current Depth, Temperate, Conductivity Readings once every 10 cycles (see if statement below for exact number)
     	        }
     	        // This streams the data for the 6 boxes on the first page
     	        // once every 10 cycles.
@@ -370,6 +398,138 @@ void Time_Resp(void)
   SendByte(Time.read_ampm);     // 0=AM, 1=PM (optional, since we're using 24-hour)
   SendByte(Time.read_weekday);  // 1=Monday, 7=Sunday
   SendByte(Lpuart1.crcsend);
+}
+
+void Sampling_Resp(void)
+{
+  SendHeader(SAMPLING_RESP_MSGLGT, SAMPLING_RESP_MSGID);
+  SendByte(Sampling.boxselection);    // Box selection
+  SendByte(Sampling.reserved0);         // Reserved 0
+  SendByte(Sampling.mode);               // 0 = Time - Continuous, 1 = Time - Do not Loop, 2 = Event Triggered
+  SendByte(Sampling.rate);                  // 0 = 0.1 sec, 1 = 0.5 sec, 2 = 1 sec, 3 = 5 sec, 4 = 10 sec, 5 = 30 sec, 6 = 1 min, 7 = 5 min, 8 = 10 min, 9 = 30 min, 10 = 1 hour
+  SendByte(Sampling.reserved1);         // Reserved 1
+  SendByte(Sampling.reserved2);         // Reserved 2
+  SendByte(Lpuart1.crcsend);
+}
+
+void Sampling_Set(void)
+{
+  Sampling.boxselection = Lpuart1shadow.payload[0];
+  Sampling.reserved0 = Lpuart1shadow.payload[1];
+  Sampling.mode = Lpuart1shadow.payload[2];
+  Sampling.rate = Lpuart1shadow.payload[3];
+  Sampling.reserved1 = Lpuart1shadow.payload[4];
+  Sampling.reserved2 = Lpuart1shadow.payload[5];
+}
+
+void Activation_Resp(void)
+{
+  SendHeader(ACTIVATION_RESP_MSGLGT, ACTIVATION_RESP_MSGID);
+  SendByte(Activation.boxselection);
+  SendByte(Activation.reserved0);
+
+  SendByte(Activation.start_year);
+  SendByte(Activation.start_month);
+  SendByte(Activation.start_day);
+  SendByte(Activation.start_hour);
+  SendByte(Activation.start_minute);
+  SendByte(Activation.start_second);
+  SendByte(Activation.start_ampm);
+  SendByte(Activation.start_full_year[0]);
+  SendByte(Activation.start_full_year[1]);
+  SendByte(Activation.start_weekday);
+
+  SendByte(Activation.end_year);
+  SendByte(Activation.end_month);
+  SendByte(Activation.end_day);
+  SendByte(Activation.end_hour);
+  SendByte(Activation.end_minute);
+  SendByte(Activation.end_second);
+  SendByte(Activation.end_ampm);
+  SendByte(Activation.end_full_year[0]);
+  SendByte(Activation.end_full_year[1]);
+  SendByte(Activation.end_weekday);
+
+  SendByte(Activation.eventtrigger);
+  SendByte(Activation.eventthreshold);
+  SendByte(Lpuart1.crcsend);
+}
+
+void Activation_Set(void)
+{
+  // General info
+  Activation.boxselection = Lpuart1shadow.payload[0];
+  Activation.reserved0 = Lpuart1shadow.payload[1];
+  // Start Time
+  Activation.start_year = Lpuart1shadow.payload[2];
+  Activation.start_month = Lpuart1shadow.payload[3];
+  Activation.start_day = Lpuart1shadow.payload[4];
+  Activation.start_hour = Lpuart1shadow.payload[5];
+  Activation.start_minute = Lpuart1shadow.payload[6];
+  Activation.start_second = Lpuart1shadow.payload[7];
+  Activation.start_ampm = Lpuart1shadow.payload[8];
+  Activation.start_full_year[0] = Lpuart1shadow.payload[9];
+  Activation.start_full_year[1] = Lpuart1shadow.payload[10];
+  Activation.start_weekday = Lpuart1shadow.payload[11];
+  // End Time
+  Activation.end_year = Lpuart1shadow.payload[12];
+  Activation.end_month = Lpuart1shadow.payload[13];
+  Activation.end_day = Lpuart1shadow.payload[14];
+  Activation.end_hour = Lpuart1shadow.payload[15];
+  Activation.end_minute = Lpuart1shadow.payload[16];
+  Activation.end_second = Lpuart1shadow.payload[17];
+  Activation.end_ampm = Lpuart1shadow.payload[18];
+  Activation.end_full_year[0] = Lpuart1shadow.payload[19];
+  Activation.end_full_year[1] = Lpuart1shadow.payload[20];
+  Activation.end_weekday = Lpuart1shadow.payload[21];
+  // Event related info
+  Activation.eventtrigger = Lpuart1shadow.payload[22];
+  Activation.eventthreshold = Lpuart1shadow.payload[23];
+}
+
+void Notes_Resp(void)
+{
+  SendHeader(NOTES_RESP_MSGLGT, NOTES_RESP_MSGID);
+  SendByte(Notes.boxselection);
+  SendByte(Notes.reserved0);
+  // Name - 24 bytes
+  for(uint8_t x = 0; x < MAX_NOTES_NAME_ARRAY; x++)
+  {
+    SendByte(Notes.name[x]);
+  }
+  // Location - 24 bytes
+  for(uint8_t y = 0; y < MAX_NOTES_LOCATION_ARRAY; y++)
+  {
+    SendByte(Notes.location[y]);
+  }
+  // Note - 128 bytes
+  for(uint8_t z = 0; z < MAX_NOTES_NOTE_ARRAY; z++)
+  {
+    SendByte(Notes.note[z]);
+  }
+  SendByte(Lpuart1.crcsend);
+}
+
+void Notes_Set(void)
+{
+  // General info
+  Notes.boxselection = Lpuart1shadow.payload[0];
+  Notes.reserved0 = Lpuart1shadow.payload[1];
+  // Name - 24 bytes
+  for(uint8_t x = 0; x < MAX_NOTES_NAME_ARRAY;x++)
+  {
+    Notes.name[x] = Lpuart1shadow.payload[2 + x];
+  }
+  // Location - 24 bytes
+  for(uint8_t y = 0; y < MAX_NOTES_LOCATION_ARRAY;y++)
+  {
+    Notes.location[y] = Lpuart1shadow.payload[(2 + MAX_NOTES_NAME_ARRAY) + y];
+  }
+  // Note - 128 bytes
+  for(uint8_t z = 0; z < MAX_NOTES_NOTE_ARRAY;z++)
+  {
+    Notes.note[z] = Lpuart1shadow.payload[(2 + MAX_NOTES_NAME_ARRAY + MAX_NOTES_LOCATION_ARRAY) + z];
+  }
 }
 
 void Log_ShowFiles_Resp(void)

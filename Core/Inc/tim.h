@@ -35,12 +35,25 @@ extern "C" {
 extern TIM_HandleTypeDef htim2;
 
 
+
 /* USER CODE BEGIN Private defines */
+typedef enum {
+    TIME_UNIT_MS,
+    TIME_UNIT_SEC,
+    TIME_UNIT_MIN,
+    TIME_UNIT_HOUR
+} TimeUnit_t;
+
 
 /* USER CODE END Private defines */
 
 
 /* USER CODE BEGIN Prototypes */
+void Blinky(void);
+void Set_TIM2_Interval(uint32_t value, TimeUnit_t unit);
+//extern void DebugMemory4(void);
+//extern void RecordingStart(void);
+//extern void SendByte(uint8_t data);
 
 /* USER CODE END Prototypes */
 

@@ -21,7 +21,7 @@
 
 
 // Debug Print
-#define DEBUG_SENSOR 0 // 1 to show ascii readouts in console, 0 to not
+#define DEBUG_SENSOR 1// 1 to show ascii readouts in console, 0 to not
 
 #define DLE 0x10
 #define STX 0x02
@@ -54,7 +54,9 @@
 #define MAX_ACTIVATE_END_FULLYEAR_ARRAY 2
 
 // Note
-#define MAX_NOTES_NOTE_ARRAY 255
+#define MAX_NOTES_NAME_ARRAY 24
+#define MAX_NOTES_LOCATION_ARRAY 24
+#define MAX_NOTES_NOTE_ARRAY 128
 
 // Cloud
 #define MAX_CLOUD_IP_ARRAY 13
@@ -182,16 +184,16 @@
 #define SENSOR_RESERVED_ARRAY 6
 
 // ============================================
-// Sensor Type Selection (Hardcoded for now)
+// Sensor Type Selection (Hard coded for now)
 // ============================================
 #define SENSOR_TYPE_TE_INTEGRATED    1
 #define SENSOR_TYPE_INTERFACE_BOARD  2
 
 // Select the active sensor (change this to switch)
-#define SENSOR_TYPE  SENSOR_TYPE_INTERFACE_BOARD // SENSOR_TYPE_TE_INTEGRATED
+#define SENSOR_TYPE  SENSOR_TYPE_TE_INTEGRATED // SENSOR_TYPE_INTERFACE_BOARD
 
 // Enable Interface Board implementation (comment out to disable)
-#define INTERFACE_BOARD_IMPLEMENTATION
+//#define INTERFACE_BOARD_IMPLEMENTATION
 
 
 // Messages ========================================================
@@ -266,20 +268,20 @@
 #define ACTIVATION_QUERY_MSGLGT 0x07
 #define ACTIVATION_QUERY_MSGID 0x15
 
-#define ACTIVATION_RESP_MSGLGT 0x0D
+#define ACTIVATION_RESP_MSGLGT 0x1F
 #define ACTIVATION_RESP_MSGID 0x16
 
-#define ACTIVATION_SET_MSGLGT 0x0D
+#define ACTIVATION_SET_MSGLGT 0x1F
 #define ACTIVATION_SET_MSGID 0x17
 
 // Re-check this -- just using some bogus values for now
 #define NOTES_QUERY_MSGLGT 0x07
 #define NOTES_QUERY_MSGID 0x18
 
-#define NOTES_RESP_MSGLGT 0x29
+#define NOTES_RESP_MSGLGT 0xB9
 #define NOTES_RESP_MSGID 0x19
 
-#define NOTES_SET_MSGLGT 0x29
+#define NOTES_SET_MSGLGT 0xB9
 #define NOTES_SET_MSGID 0x1A
 
 // Re-check this -- just using some bogus values for now
@@ -287,10 +289,10 @@
 #define CLOUD_QUERY_MSGID 0x1B
 
 #define CLOUD_RESP_MSGLGT 0x07
-#define CLOUD_RESP_MSGID 0x0D
+#define CLOUD_RESP_MSGID 0x1C
 
 #define CLOUD_SET_MSGLGT 0x07
-#define CLOUD_SET_MSGID 0x0D
+#define CLOUD_SET_MSGID 0x1D
 
 // Re-check this -- just using some bogus values for now
 #define MISC_QUERY_MSGLGT 0x07

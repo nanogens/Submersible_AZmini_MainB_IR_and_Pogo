@@ -36,6 +36,7 @@
 #include "memory.h"
 #include "misc.h"
 #include "process.h"
+#include "tim.h"
 
 /* USER CODE END Includes */
 
@@ -100,11 +101,6 @@ static void MX_I2C1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void Blinky(void)
-{
-  //HAL_GPIO_TogglePin(LED_A_GPIO_Port, LED_A_Pin);
-  //HAL_GPIO_TogglePin(LED_B_GPIO_Port, LED_B_Pin);
-}
 
 #ifdef INTERFACE_BOARD_IMPLEMENTATION
 
@@ -224,7 +220,8 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
   */
 int main(void)
 {
-    /* USER CODE BEGIN 1 */
+
+  /* USER CODE BEGIN 1 */
 
   uint8_t msg = 0;
   uint8_t test_write[] = {0xDE, 0xAD, 0xBE, 0xEF};
@@ -259,13 +256,12 @@ int main(void)
   MX_RTC_Init();
   MX_SPI1_Init();
   MX_TIM2_Init();
-    MX_USART2_IRDA_Init();
+  MX_USART2_IRDA_Init();
   MX_I2C1_Init();
-  
+  /* USER CODE BEGIN 2 */
+
   // Now all peripherals are initialized -- safe to enable interrupts
   __enable_irq();
-
-  /* USER CODE BEGIN 2 */
 
 #ifdef IR_USART2_SEL
     pActiveIrda = &hirda2;
@@ -299,11 +295,18 @@ int main(void)
 #endif
 
   RTC_Init();
-  HAL_TIM_Base_Start_IT(&htim2);
+  //HAL_TIM_Base_Start_IT(&htim2);
+  Set_TIM2_Interval(1, TIME_UNIT_SEC);
   HAL_Delay(3000);
 
   uint8_t repeat = 0;
-  ReedSwitch.state = DEACTIVATED;
+
+  /*
+  SendString((uint8_t*)"\n\nMemory Wiped...\r");
+  ClearShowFilesAndMetadata();
+  ReedSwitch.state = ACTIVATED;  // temporary to test recording
+  SendString((uint8_t*)"\nReed Switch Activated...\r");
+  */
 
 #ifdef INTERFACE_BOARD_IMPLEMENTATION
   SendString((uint8_t*)"\r\n=== Starting I2C Test ===\r\n");
@@ -319,6 +322,8 @@ int main(void)
   while (1)
   {
     ProcessMsg();
+
+    //TestingRuns();
 
     //SendByte(0x55);
     //HAL_Delay(1000);
@@ -617,9 +622,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 249;
+  htim2.Init.Prescaler = 15999;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 63999;
+  htim2.Init.Period = 65535;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)

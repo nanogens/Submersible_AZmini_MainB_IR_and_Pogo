@@ -334,7 +334,7 @@ void IncomingByteCheck(void)
 	}
 	else if(
 			(Lpuart1.got <= (Lpuart1.messagelength - 1)) &&
-			(Search_MsgID(SET, Lpuart1.messageidglobal) == true)
+			(Search_MsgID(SETTING, Lpuart1.messageidglobal) == true)
 		   )
 	{
 

@@ -128,13 +128,15 @@ void Inits_Var(void)
   Time.read_full_year = 0;  // Full year (2025)
   Time.read_weekday = 0;    // 1=Monday, 7=Sunday
 
-  Sampling.reserved0 = 0;
   Sampling.boxselection = 0;
-  Sampling.mode = 0;
-  Sampling.rate = 0;
+  Sampling.reserved0 = 0;
+  Sampling.mode = 0; // 0 = Time - Continuous, 1 = Time - Do not Loop, 2 = Event Triggered
+  Sampling.rate = 0;    // 0 = 0.1 sec, 1 = 0.5 sec, 2 = 1 sec, 3 = 5 sec, 4 = 10 sec, 5 = 30 sec, 6 = 1 min, 7 = 5 min, 8 = 10 min, 9 = 30 min, 10 = 1 hour
+  Sampling.reserved1 = 0;
+  Sampling.reserved2 = 0;
 
-  Activation.reserved0 = 0;
   Activation.boxselection = 0;
+  Activation.reserved0 = 0;
   Activation.start_year = 0;
   Activation.start_month = 0;
   Activation.start_day = 0;
@@ -160,9 +162,19 @@ void Inits_Var(void)
 	  Activation.end_full_year[Counter.y0] = 0;
   }
   Activation.end_weekday = 0;
-  Activation.event = 0;
-  Activation.eventtigger = 0;
+  Activation.eventtrigger = 0;
+  Activation.eventthreshold = 0;
 
+  Notes.boxselection = 0;
+  Notes.reserved0 = 0;
+  for(Counter.y0 = 0; Counter.y0 < MAX_NOTES_NAME_ARRAY; Counter.y0++)
+  {
+    Notes.name[Counter.y0] = 0;
+  }
+  for(Counter.y0 = 0; Counter.y0 < MAX_NOTES_LOCATION_ARRAY; Counter.y0++)
+  {
+    Notes.location[Counter.y0] = 0;
+  }
   for(Counter.y0 = 0; Counter.y0 < MAX_NOTES_NOTE_ARRAY; Counter.y0++)
   {
     Notes.note[Counter.y0] = 0;

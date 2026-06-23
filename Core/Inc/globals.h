@@ -121,17 +121,18 @@ static struct Time1
 
 static struct Sampling1
 {
-  uint8_t reserved0;
   uint8_t boxselection;
-
-  uint8_t mode;
-  uint8_t rate;
+  uint8_t reserved0;
+  uint8_t mode; // 0 = Time - Continuous, 1 = Time - Do not Loop, 2 = Event Triggered
+  uint8_t rate;    // 0 = 0.1 sec, 1 = 0.5 sec, 2 = 1 sec, 3 = 5 sec, 4 = 10 sec, 5 = 30 sec, 6 = 1 min, 7 = 5 min, 8 = 10 min, 9 = 30 min, 10 = 1 hour
+  uint8_t reserved1;
+  uint8_t reserved2;
 }Sampling;
 
 static struct Activation1
 {
-  uint8_t reserved0;
   uint8_t boxselection;
+  uint8_t reserved0;
 
   // Start Date
   uint8_t start_year;    // 0-99 (00-99)
@@ -157,12 +158,16 @@ static struct Activation1
   uint8_t end_full_year[MAX_ACTIVATE_END_FULLYEAR_ARRAY]; // Full year (2025)
   uint8_t end_weekday;    // 1=Monday, 7=Sunday
 
-  uint8_t event;
-  uint8_t eventtigger;
+  uint8_t eventtrigger;
+  uint8_t eventthreshold;
 }Activation;
 
 static struct Notes1
 {
+  uint8_t boxselection;
+  uint8_t reserved0;
+  uint8_t name[MAX_NOTES_NAME_ARRAY];
+  uint8_t location[MAX_NOTES_LOCATION_ARRAY];
   uint8_t note[MAX_NOTES_NOTE_ARRAY];
 }Notes;
 

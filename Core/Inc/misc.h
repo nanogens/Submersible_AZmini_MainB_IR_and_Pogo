@@ -378,6 +378,8 @@ void RecordingStart(void)
 {
   uint8_t recordingabort  = 0;
 
+  //SendString((uint8_t*)"\n\nIn In RecordingStart()...\r");
+
   if((ReedSwitch.state == ACTIVATED) && (RecordState.started == RECORDING_NOTSTARTED))
   {
 	//RecordState.started = RECORDING_ONGOING;
@@ -419,7 +421,9 @@ void RecordingStart(void)
     D2 = 0; // raw Digital Temperature Value from pressure sensor
 
     // Analyze EEPROM and set accordingly
-    AnalyzeEEPROM();  // currently empty - must read sector 2, page 0 to 4 to know how next file slot
+    //AnalyzeEEPROM();  // currently empty - must read sector 2, page 0 to 4 to know how next file slot
+
+    //ClearShowFilesAndMetadata(); // temporarily added - testing.
 
     // Looking for empty file slot and choosing it if available for recording
     recordingabort = Write_FileSettings();
