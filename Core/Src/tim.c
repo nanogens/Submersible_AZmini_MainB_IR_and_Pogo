@@ -11,6 +11,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "tim.h"
+#include <stdio.h>
+#include "memory.h"
 
 
 /* USER CODE BEGIN 0 */
@@ -84,7 +86,8 @@ void Set_TIM2_Interval(uint32_t value, TimeUnit_t unit)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-    if (htim->Instance == TIM2) {
+    if (htim->Instance == TIM2)
+    {
         uint8_t is_timer_expired = 0;
 
         if (current_overflow_target > 0) {
@@ -117,9 +120,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         // =======================================================
         if (is_timer_expired)
         {
-            // This triggers every single time the full interval ends
+            Blinky(); // Toggle LED_A every second to verify timer interrupts are working
 
-        	/*
         	// 2. Try to start a recording if the switch is ON
             // If memory is full, this sets state to RECORDING_NOSPACE and stops trying.
         	RecordingStart();
@@ -127,9 +129,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             // 3. Obtain a record if we are in the recording state and the end time has not been reached yet
         	if((RecordState.started == RECORDING_ONGOING) && (Counter.repeat < 60))
         	{
-            	SendByte(0x55);
-        	    //DebugMemory4();
-            	Blinky();
+        	    DebugMemory4();
             	Counter.repeat++;
         	}
         	// if we are in the recording state and the end time has been reached, turn off
@@ -145,7 +145,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         	     Counter.repeat = 0; // Reset counter
         	     HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);  // deactivate
             }
-            */
         }
         // =======================================================
     }

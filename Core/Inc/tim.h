@@ -51,9 +51,10 @@ typedef enum {
 /* USER CODE BEGIN Prototypes */
 void Blinky(void);
 void Set_TIM2_Interval(uint32_t value, TimeUnit_t unit);
-//extern void DebugMemory4(void);
-//extern void RecordingStart(void);
-//extern void SendByte(uint8_t data);
+
+void DebugMemory4(void);
+void RecordingStart(void);
+void SendByte(uint8_t data);
 
 /* USER CODE END Prototypes */
 

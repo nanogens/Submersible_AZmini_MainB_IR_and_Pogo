@@ -222,7 +222,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
   uint8_t msg = 0;
   uint8_t test_write[] = {0xDE, 0xAD, 0xBE, 0xEF};
   uint8_t test_read[4] = {0};
@@ -296,17 +295,17 @@ int main(void)
 
   RTC_Init();
   //HAL_TIM_Base_Start_IT(&htim2);
-  Set_TIM2_Interval(1, TIME_UNIT_SEC);
   HAL_Delay(3000);
 
   uint8_t repeat = 0;
 
-  /*
+
   SendString((uint8_t*)"\n\nMemory Wiped...\r");
   ClearShowFilesAndMetadata();
   ReedSwitch.state = ACTIVATED;  // temporary to test recording
   SendString((uint8_t*)"\nReed Switch Activated...\r");
-  */
+
+  Set_TIM2_Interval(1, TIME_UNIT_SEC);
 
 #ifdef INTERFACE_BOARD_IMPLEMENTATION
   SendString((uint8_t*)"\r\n=== Starting I2C Test ===\r\n");
