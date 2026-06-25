@@ -768,8 +768,6 @@ void CommitPage(void)
 
 void Update_ShowFilesQuadrant(void)
 {
-	static uint8_t saveonce = 0;
-
     // 1. Calculate linear physical address (M95P32 pages are exactly 512 bytes)
     uint32_t page_address = (BYTES_PER_SECTOR * SHOWFILES_SECTOR) + (BYTES_PER_PAGE * SHOWFILES_PAGE);
 
@@ -793,7 +791,7 @@ void Update_ShowFilesQuadrant(void)
     PageData.pagedata_r[offset + 13] = (uint8_t)(RecordState.totalrecordcount);
 
     // 5. MODIFY: Update these in the RAM buffer once (on the first page header) as it never changes for the recording
-    if(saveonce == 0) // first time in
+    if(RecordState.totalrecordcount == 0) // first time in
     {
     	// Reserved
     	PageData.pagedata_r[offset + 0] = FILE_SLOT_OCCUPIED; // Reserved 0 - Temporary (fixed)
@@ -821,7 +819,6 @@ void Update_ShowFilesQuadrant(void)
         {
         	PageData.pagedata_r[offset + 14 + e] = ShowFiles.filecreationtime[e];
         }
-        saveonce = 1; // never re-enter this if
     }
 
     // 6. WRITE: Send the modified 512-byte page back to the EEPROM
