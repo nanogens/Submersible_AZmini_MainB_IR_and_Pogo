@@ -195,6 +195,15 @@
 // Enable Interface Board implementation (comment out to disable)
 //#define INTERFACE_BOARD_IMPLEMENTATION
 
+// SamplingMode
+#define TIME_CONTINUOUSLOOP 0
+#define TIME_DONOTLOOP 1
+#define EVENT_TRIGGERED 2
+
+// ActivateRecordingPlan
+#define RUN_PLAN_NO 0
+#define RUN_PLAN_YES 1
+
 
 // Messages ========================================================
 // Version
@@ -224,7 +233,7 @@
 #define INSTRUMENT_SET_MSGLGT 0x19
 #define INSTRUMENT_SET_MSGID 0x08
 
-// Re-check this -- just using some bogus values for now
+// Communication
 #define COMMUNICATION_QUERY_MSGLGT 0x07
 #define COMMUNICATION_QUERY_MSGID 0x09
 
@@ -234,7 +243,7 @@
 #define COMMUNICATION_SET_MSGLGT 0x0B
 #define COMMUNICATION_SET_MSGID 0x0B
 
-// Re-check this -- just using some bogus values for now
+// Power
 #define POWER_QUERY_MSGLGT 0x07
 #define POWER_QUERY_MSGID 0x0C
 
@@ -244,7 +253,7 @@
 #define POWER_SET_MSGLGT 0x0F
 #define POWER_SET_MSGID 0x0E
 
-// Re-check this -- just using some bogus values for now
+// Time
 #define TIME_QUERY_MSGLGT 0x07
 #define TIME_QUERY_MSGID 0x0F
 
@@ -254,7 +263,7 @@
 #define TIME_SET_MSGLGT 0x11
 #define TIME_SET_MSGID 0x11
 
-// Re-check this -- just using some bogus values for now
+// Sampling
 #define SAMPLING_QUERY_MSGLGT 0x07
 #define SAMPLING_QUERY_MSGID 0x12
 
@@ -264,7 +273,7 @@
 #define SAMPLING_SET_MSGLGT 0x0D
 #define SAMPLING_SET_MSGID 0x14
 
-// Re-check this -- just using some bogus values for now
+// Activation
 #define ACTIVATION_QUERY_MSGLGT 0x07
 #define ACTIVATION_QUERY_MSGID 0x15
 
@@ -274,7 +283,7 @@
 #define ACTIVATION_SET_MSGLGT 0x1F
 #define ACTIVATION_SET_MSGID 0x17
 
-// Re-check this -- just using some bogus values for now
+// Notes
 #define NOTES_QUERY_MSGLGT 0x07
 #define NOTES_QUERY_MSGID 0x18
 
@@ -284,7 +293,7 @@
 #define NOTES_SET_MSGLGT 0xB9
 #define NOTES_SET_MSGID 0x1A
 
-// Re-check this -- just using some bogus values for now
+// Cloud
 #define CLOUD_QUERY_MSGLGT 0x07
 #define CLOUD_QUERY_MSGID 0x1B
 
@@ -294,7 +303,7 @@
 #define CLOUD_SET_MSGLGT 0x07
 #define CLOUD_SET_MSGID 0x1D
 
-// Re-check this -- just using some bogus values for now
+// Misc
 #define MISC_QUERY_MSGLGT 0x07
 #define MISC_QUERY_MSGID 0x1E
 
@@ -303,6 +312,20 @@
 
 #define MISC_SET_MSGLGT 0x0D
 #define MISC_SET_MSGID 0x20
+
+// Activation
+#define APPLYRECORDINGPLAN_QUERY_MSGLGT 0x07
+#define APPLYRECORDINGPLAN_QUERY_MSGID 0x90
+
+#define APPLYRECORDINGPLAN_RESP_MSGLGT 0x0D
+#define APPLYRECORDINGPLAN_RESP_MSGID 0x91
+
+#define APPLYRECORDINGPLAN_SET_MSGLGT 0x0D
+#define APPLYRECORDINGPLAN_SET_MSGID 0x92
+
+#define PLAN_RUN_NO   0
+#define PLAN_RUN_YES  1
+
 
 // ----------------------------
 

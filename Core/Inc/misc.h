@@ -20,5 +20,9 @@ uint8_t Write_FileSettings(void);
 
 void DebugMemory4(void);
 
+uint8_t Get24Hour(uint8_t hour12, uint8_t ampm);
+uint8_t IsTargetTimeReached(void);
+uint8_t IsEndTimeReached(void);
+
 #endif /* INC_MISC_H_ */
 

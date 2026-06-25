@@ -449,3 +449,71 @@ void RecordingStop(void)
     RecordHeader.status = RECORDSTATUS_UNKNOWN;
   }
 }
+
+uint8_t Get24Hour(uint8_t hour12, uint8_t ampm)
+{
+  uint8_t hour24 = hour12;
+  if (ampm == 1) { // PM
+      if (hour24 != 12) {
+          hour24 += 12;
+      }
+  } else { // AM
+      if (hour24 == 12) {
+          hour24 = 0;
+      }
+  }
+  return hour24;
+}
+
+uint8_t IsTargetTimeReached(void)
+{
+  RTC_ReadTime();
+  uint8_t current_hour24 = Get24Hour(Time.read_hour, Time.read_ampm);
+  uint8_t target_hour24 = Get24Hour(Activation.start_hour, Activation.start_ampm);
+
+  if (Time.read_year > Activation.start_year) return 1;
+  if (Time.read_year < Activation.start_year) return 0;
+
+  if (Time.read_month > Activation.start_month) return 1;
+  if (Time.read_month < Activation.start_month) return 0;
+
+  if (Time.read_day > Activation.start_day) return 1;
+  if (Time.read_day < Activation.start_day) return 0;
+
+  if (current_hour24 > target_hour24) return 1;
+  if (current_hour24 < target_hour24) return 0;
+
+  if (Time.read_minute > Activation.start_minute) return 1;
+  if (Time.read_minute < Activation.start_minute) return 0;
+
+  if (Time.read_second >= Activation.start_second) return 1;
+
+  return 0;
+}
+
+uint8_t IsEndTimeReached(void)
+{
+  RTC_ReadTime();
+  uint8_t current_hour24 = Get24Hour(Time.read_hour, Time.read_ampm);
+  uint8_t end_hour24 = Get24Hour(Activation.end_hour, Activation.end_ampm);
+
+  if (Time.read_year > Activation.end_year) return 1;
+  if (Time.read_year < Activation.end_year) return 0;
+
+  if (Time.read_month > Activation.end_month) return 1;
+  if (Time.read_month < Activation.end_month) return 0;
+
+  if (Time.read_day > Activation.end_day) return 1;
+  if (Time.read_day < Activation.end_day) return 0;
+
+  if (current_hour24 > end_hour24) return 1;
+  if (current_hour24 < end_hour24) return 0;
+
+  if (Time.read_minute > Activation.end_minute) return 1;
+  if (Time.read_minute < Activation.end_minute) return 0;
+
+  if (Time.read_second >= Activation.end_second) return 1;
+
+  return 0;
+}
+

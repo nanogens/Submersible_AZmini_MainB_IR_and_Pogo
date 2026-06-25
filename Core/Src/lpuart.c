@@ -124,6 +124,7 @@ bool Search_MsgID(uint8_t settingorquery, uint8_t messageidglobal)
         (messageidglobal == NOTES_QUERY_MSGID) ||
         (messageidglobal == CLOUD_QUERY_MSGID) ||
 		(messageidglobal == MISC_QUERY_MSGID) ||
+		(messageidglobal == APPLYRECORDINGPLAN_QUERY_MSGID) ||
 
 		(messageidglobal == LOG_SHOWFILES_QUERY_MSGID) ||
 		//(messageidglobal == LOG_READSPECIFICFILE_QUERY_MSGID) ||
@@ -151,6 +152,7 @@ bool Search_MsgID(uint8_t settingorquery, uint8_t messageidglobal)
         (messageidglobal == NOTES_SET_MSGID) ||
         (messageidglobal == CLOUD_SET_MSGID) ||
 		(messageidglobal == MISC_SET_MSGID) ||
+		(messageidglobal == APPLYRECORDINGPLAN_SET_MSGID) ||
 
 		(messageidglobal == LOG_READSPECIFICFILE_SET_MSGID) ||
 		(messageidglobal == LOG_TRANSMITDATA_SET_MSGID) ||

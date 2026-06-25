@@ -10,6 +10,9 @@
 #include "rtc.h"
 #include "memory.h"
 #include "lpuart.h"
+#include "tim.h"
+#include "misc.h"
+
 
 // Function definition
 void ProcessMsg(void)
@@ -59,6 +62,10 @@ void ProcessMsg(void)
       case MISC_QUERY_MSGID:
     	        Lpuart1shadow.messageid = 0;
     	        break;
+      case APPLYRECORDINGPLAN_QUERY_MSGID:
+    	        ApplyRecordingPlan_Resp();
+	            Lpuart1shadow.messageid = 0;
+	            break;
 
       // Set
       case INSTRUMENT_SET_MSGID:
@@ -89,6 +96,11 @@ void ProcessMsg(void)
     	        Notes_Set();
     	        Notes_Resp();
     	        break;
+
+      case APPLYRECORDINGPLAN_SET_MSGID:
+    	  	   ApplyRecordingPlan_Set();
+    	  	   ApplyRecordingPlan_Resp();
+    	  	   break;
 
       // Logging
       case LOG_SHOWFILES_QUERY_MSGID:  // Retrieve basic info on all files
@@ -333,7 +345,7 @@ void Time_StoreData(void)
 {
   // Saving the stuff FW received from Viewer (as a SET)
   Time.boxselection = Lpuart1shadow.payload[0];
-  Time.reserved = Lpuart1shadow.payload[1];
+  Time.reserved0 = Lpuart1shadow.payload[1];
 
   Time.set_year = Lpuart1shadow.payload[2];         // 0-99 (00-99)
   Time.set_month  = Lpuart1shadow.payload[3];      // 1-12
@@ -352,7 +364,7 @@ void Time_Resp(void)
 {
   SendHeader(TIME_RESP_MSGLGT, TIME_RESP_MSGID);
   SendByte(Time.boxselection);     // Box selection
-  SendByte(Time.reserved);           // Reserved
+  SendByte(Time.reserved0);         // Reserved0
   SendByte(Time.read_year);         // 0-99 (00-99)
   SendByte(Time.read_month);     // 1-12
   SendByte(Time.read_day);          // 1-31
@@ -493,6 +505,42 @@ void Notes_Set(void)
   for(uint8_t z = 0; z < MAX_NOTES_NOTE_ARRAY;z++)
   {
     Notes.note[z] = Lpuart1shadow.payload[(2 + MAX_NOTES_NAME_ARRAY + MAX_NOTES_LOCATION_ARRAY) + z];
+  }
+}
+
+void ApplyRecordingPlan_Resp(void)
+{
+  SendHeader(APPLYRECORDINGPLAN_RESP_MSGLGT, APPLYRECORDINGPLAN_RESP_MSGID);
+  SendByte(ApplyRecordingPlan.boxselection);
+  SendByte(ApplyRecordingPlan.reserved0);
+  SendByte(ApplyRecordingPlan.run);
+  SendByte(0x00);
+  SendByte(0x00);
+  SendByte(0x00);
+  SendByte(Lpuart1.crcsend);
+}
+
+void ApplyRecordingPlan_Set(void)
+{
+  // General info
+  ApplyRecordingPlan.boxselection = Lpuart1shadow.payload[0];
+  ApplyRecordingPlan.reserved0 = Lpuart1shadow.payload[1];
+
+  ApplyRecordingPlan.run = Lpuart1shadow.payload[2];
+
+  // If changed to PLAN_RUN_NO while recording is active, abort immediately
+  if (ApplyRecordingPlan.run == PLAN_RUN_NO && RecordState.started == RECORDING_ONGOING)
+  {
+      ReedSwitch.state = DEACTIVATED;
+      DebugMemory4(); // Write final records and stop
+
+      RecordState.started = RECORDING_NOTSTARTED;
+      RecordState.sector = 0;
+      Counter.repeat = 0;
+
+      is_timer_triggered = 0;
+      HAL_TIM_Base_Stop_IT(&htim2);
+      HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);  // turn off LED_A
   }
 }
 

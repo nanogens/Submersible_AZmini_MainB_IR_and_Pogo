@@ -34,9 +34,9 @@ void Inits_Var(void)
   Counter.reedswitchcount = 0; // to debounce the reed switch
   Counter.repeat = 0;
 
-    // Version
-  Version.reserved = 0;
+  // Version
   Version.boxselection = 0;
+  Version.reserved = 0;
   for(i = 0; i < MAX_FWVERSION_ARRAY; i++)
   {
     Version.fw_version[i] = 0;
@@ -47,16 +47,16 @@ void Inits_Var(void)
   }
 
   // Status
-  Status.reserved = 0;
   Status.boxselection = 0;
+  Status.reserved = 0;
   for(i = 0; i < MAX_STATUS_RES_ARRAY; i++)
   {
     Status.res[i] = 0;
   }
 
   // Instrument
-  Instrument.reserved = 0;
   Instrument.boxselection = 0;
+  Instrument.reserved = 0;
 
   Instrument.device = 0;
   for(i = 0; i < MAX_INSTRUMENT_SERIAL_ARRAY; i++)
@@ -82,8 +82,8 @@ void Inits_Var(void)
   }
 
   // Communications
-  Communication.reserved0 = 0;
   Communication.boxselection = 0;
+  Communication.reserved0 = 0;
   Communication.connetion = 0;
   Communication.baudrate = 0;
 
@@ -98,6 +98,8 @@ void Inits_Var(void)
   Power.powerremaining = 0;
 
   // Time structure
+  Time.boxselection = 0;
+  Time.reserved0 = 0;
   Time.set_year = 0;
   Time.set_month = 0;
   Time.set_day = 0;
@@ -124,7 +126,7 @@ void Inits_Var(void)
   Sampling.reserved1 = 0;
   Sampling.reserved2 = 0;
 
-    Activation.boxselection = 0;
+  Activation.boxselection = 0;
   Activation.reserved0 = 0;
   Activation.start_year = 0;
   Activation.start_month = 0;
@@ -154,6 +156,10 @@ void Inits_Var(void)
   Activation.eventtrigger = 0;
   Activation.eventthreshold = 0;
 
+  ApplyRecordingPlan.boxselection = 0;
+  ApplyRecordingPlan.reserved0 = 0;
+  ApplyRecordingPlan.run = PLAN_RUN_NO;
+
   Notes.boxselection = 0;
   Notes.reserved0 = 0;
   for(i = 0; i < MAX_NOTES_NAME_ARRAY; i++)
@@ -169,6 +175,8 @@ void Inits_Var(void)
     Notes.note[i] = 0;
   }
 
+  Cloud.boxselection = 0;
+  Cloud.reserved0 = 0;
   for(i = 0; i < MAX_CLOUD_IP_ARRAY; i++)
   {
     Cloud.ip[i] = 0;
@@ -182,7 +190,13 @@ void Inits_Var(void)
     Cloud.pw[i] = 0;
   }
 
+  Misc.boxselection = 0;
+  Misc.reserved0 = 0;
   Misc.stuff = 0;
+
+  ApplyRecordingPlan.boxselection = 0;
+  ApplyRecordingPlan.reserved0 = 0;
+  ApplyRecordingPlan.run = RUN_PLAN_NO;
 
 
   // First page - 6 boxes ------------------

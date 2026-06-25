@@ -296,16 +296,15 @@ int main(void)
   RTC_Init();
   //HAL_TIM_Base_Start_IT(&htim2);
   HAL_Delay(3000);
-
   uint8_t repeat = 0;
 
+  // Memory wipeout and ReedSwitch activation (disabled at startup, handled dynamically by start-time trigger)
+  // SendString((uint8_t*)"\n\nMemory Wiped...\r");
+  // ClearShowFilesAndMetadata();  // WIpes out all memory
+  // ReedSwitch.state = ACTIVATED;  // temporary to test recording
+  // SendString((uint8_t*)"\nReed Switch Activated...\r");
+  // Set_TIM2_Interval(1, TIME_UNIT_SEC);
 
-  SendString((uint8_t*)"\n\nMemory Wiped...\r");
-  ClearShowFilesAndMetadata();
-  ReedSwitch.state = ACTIVATED;  // temporary to test recording
-  SendString((uint8_t*)"\nReed Switch Activated...\r");
-
-  Set_TIM2_Interval(1, TIME_UNIT_SEC);
 
 #ifdef INTERFACE_BOARD_IMPLEMENTATION
   SendString((uint8_t*)"\r\n=== Starting I2C Test ===\r\n");
@@ -321,6 +320,30 @@ int main(void)
   while (1)
   {
     ProcessMsg();
+
+    if (!is_timer_triggered && ApplyRecordingPlan.run == PLAN_RUN_YES)
+    {
+        if (IsTargetTimeReached())
+        {
+            // Only start if we are in Mode 1 (Do Not Loop) OR if we haven't reached the end time yet
+            if (Sampling.mode == TIME_DONOTLOOP || !IsEndTimeReached())
+            {
+                SendString((uint8_t*)"\nTarget time reached. Clearing EEPROM memory...\r\n");
+                ClearShowFilesAndMetadata();
+                SendString((uint8_t*)"\nEEPROM cleared. Starting recording session...\r\n");
+
+                ReedSwitch.state = ACTIVATED;
+                is_timer_triggered = 1;
+                StartRecordingTimer();
+            }
+            else
+            {
+                // Schedule has already passed; auto-deactivate
+                ApplyRecordingPlan.run = PLAN_RUN_NO;
+                is_timer_triggered = 0;
+            }
+        }
+    }
 
     //TestingRuns();
 

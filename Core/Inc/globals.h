@@ -85,7 +85,7 @@ struct Power1 {
 extern struct Power1 Power;
 
 struct Time1 {
-  uint8_t reserved;
+  uint8_t reserved0;
   uint8_t boxselection;
   uint8_t set_year;
   uint8_t set_month;
@@ -153,6 +153,8 @@ struct Notes1 {
 extern struct Notes1 Notes;
 
 struct Cloud1 {
+  uint8_t boxselection;
+  uint8_t reserved0;
   uint8_t ip[MAX_CLOUD_IP_ARRAY];
   uint8_t login[MAX_CLOUD_LOGIN_ARRAY];
   uint8_t pw[MAX_CLOUD_PW_ARRAY];
@@ -160,9 +162,20 @@ struct Cloud1 {
 extern struct Cloud1 Cloud;
 
 struct Misc1 {
+  uint8_t boxselection;
+  uint8_t reserved0;
   uint8_t stuff;
 };
 extern struct Misc1 Misc;
+
+struct ApplyRecordingPlan1 {
+  uint8_t boxselection;
+  uint8_t reserved0;
+  uint8_t run;
+};
+extern struct ApplyRecordingPlan1 ApplyRecordingPlan;
+extern volatile uint8_t is_timer_triggered;
+
 
 struct Memory1 {
   uint8_t total[MAX_MEMORY_TOTAL_ARRAY];

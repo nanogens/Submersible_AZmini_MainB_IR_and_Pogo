@@ -13,6 +13,7 @@
 #include "tim.h"
 #include <stdio.h>
 #include "memory.h"
+#include "misc.h"
 
 
 /* USER CODE BEGIN 0 */
@@ -84,6 +85,29 @@ void Set_TIM2_Interval(uint32_t value, TimeUnit_t unit)
     HAL_TIM_Base_Start_IT(&htim2);
 }
 
+void StartRecordingTimer(void)
+{
+    uint32_t interval = 1;
+    TimeUnit_t unit = TIME_UNIT_SEC;
+
+    switch (Sampling.rate) {
+        case 0:  interval = 100; unit = TIME_UNIT_MS;   break; // 0.1 sec
+        case 1:  interval = 500; unit = TIME_UNIT_MS;   break; // 0.5 sec
+        case 2:  interval = 1;   unit = TIME_UNIT_SEC;  break; // 1 sec
+        case 3:  interval = 5;   unit = TIME_UNIT_SEC;  break; // 5 sec
+        case 4:  interval = 10;  unit = TIME_UNIT_SEC;  break; // 10 sec
+        case 5:  interval = 30;  unit = TIME_UNIT_SEC;  break; // 30 sec
+        case 6:  interval = 1;   unit = TIME_UNIT_MIN;  break; // 1 min
+        case 7:  interval = 5;   unit = TIME_UNIT_MIN;  break; // 5 min
+        case 8:  interval = 10;  unit = TIME_UNIT_MIN;  break; // 10 min
+        case 9:  interval = 30;  unit = TIME_UNIT_MIN;  break; // 30 min
+        case 10: interval = 1;   unit = TIME_UNIT_HOUR; break; // 1 hour
+        default: interval = 1;   unit = TIME_UNIT_SEC;  break;
+    }
+
+    Set_TIM2_Interval(interval, unit);
+}
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == TIM2)
@@ -122,28 +146,34 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         {
             Blinky(); // Toggle LED_A every second to verify timer interrupts are working
 
-        	// 2. Try to start a recording if the switch is ON
-            // If memory is full, this sets state to RECORDING_NOSPACE and stops trying.
-        	RecordingStart();
+            // Try to start a recording if the switch is ON (ReedSwitch.state == ACTIVATED)
+            RecordingStart();
 
-            // 3. Obtain a record if we are in the recording state and the end time has not been reached yet
-        	if((RecordState.started == RECORDING_ONGOING) && (Counter.repeat < 60))
-        	{
-        	    DebugMemory4();
-            	Counter.repeat++;
-        	}
-        	// if we are in the recording state and the end time has been reached, turn off
-        	else if ((RecordState.started == RECORDING_ONGOING) && (Counter.repeat >= 60))
-        	{
-        	     ReedSwitch.state = DEACTIVATED;
-        	     DebugMemory4(); // Write final records and stop
+            if (RecordState.started == RECORDING_ONGOING)
+            {
+                // Check if we are in Time - Continuous Loop mode and end time is reached
+                if (Sampling.mode == TIME_CONTINUOUSLOOP && IsEndTimeReached())
+                {
+                    // Execute stop recording sequence
+                    ReedSwitch.state = DEACTIVATED;
+                    DebugMemory4(); // Write final records and stop
 
-        	     // Reset state so we can start a NEW file on the next ACTIVATED marker
-        	     RecordState.started = RECORDING_NOTSTARTED;
-        	     RecordState.sector = 0;
+                    RecordState.started = RECORDING_NOTSTARTED;
+                    RecordState.sector = 0;
+                    Counter.repeat = 0;
 
-        	     Counter.repeat = 0; // Reset counter
-        	     HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);  // deactivate
+                    is_timer_triggered = 0;
+                    ApplyRecordingPlan.run = PLAN_RUN_NO;
+                    HAL_TIM_Base_Stop_IT(&htim2);
+                    HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);  // turn off LED_A
+
+                }
+                else // TIME_DONOTLOOP
+                {
+                    // Mode 1 (Do Not Loop) logs indefinitely; Mode 0 logs until end time is reached
+                    DebugMemory4();
+                    Counter.repeat++;
+                }
             }
         }
         // =======================================================

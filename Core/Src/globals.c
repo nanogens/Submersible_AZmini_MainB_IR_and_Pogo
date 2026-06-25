@@ -14,7 +14,10 @@ struct Activation1 Activation;
 struct Notes1 Notes;
 struct Cloud1 Cloud;
 struct Misc1 Misc;
+struct ApplyRecordingPlan1 ApplyRecordingPlan;
+volatile uint8_t is_timer_triggered = 0;
 struct Memory1 Memory;
+
 struct Surface1 Surface;
 struct Battery1 Battery;
 struct Usage1 Usage;
