@@ -350,7 +350,7 @@ void Time_StoreData(void)
   Time.set_year = Lpuart1shadow.payload[2];         // 0-99 (00-99)
   Time.set_month  = Lpuart1shadow.payload[3];      // 1-12
   Time.set_day  = Lpuart1shadow.payload[4];          // 1-31
-  Time.set_hour  = Lpuart1shadow.payload[5];        // 0-23 (24-hour format)
+  Time.set_hour  = Lpuart1shadow.payload[5];        // 1-12 (12-hour format)
   Time.set_minute  = Lpuart1shadow.payload[6];     // 0-59
   Time.set_second  = Lpuart1shadow.payload[7];     // 0-59
   Time.set_ampm  = Lpuart1shadow.payload[8];      // 0=AM, 1=PM (optional, since we're using 24-hour)

@@ -296,7 +296,6 @@ int main(void)
   RTC_Init();
   //HAL_TIM_Base_Start_IT(&htim2);
   HAL_Delay(3000);
-  uint8_t repeat = 0;
 
   // Memory wipeout and ReedSwitch activation (disabled at startup, handled dynamically by start-time trigger)
   // SendString((uint8_t*)"\n\nMemory Wiped...\r");
