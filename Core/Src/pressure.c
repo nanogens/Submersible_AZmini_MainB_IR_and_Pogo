@@ -29,7 +29,7 @@ uint8_t MS5837_CRC4(uint16_t n_prom[])
     uint8_t n_bit;
 
     n_prom[0] = ((n_prom[0]) & 0x0FFF);
-    // Remove this line: n_prom[7] = 0;  // This accesses out-of-bounds memory!
+    n_prom[7] = 0;
 
     for (uint8_t cnt = 0; cnt < 16; cnt++) {
         if (cnt % 2 == 1) n_rem ^= (uint16_t)((n_prom[cnt>>1]) & 0x00FF);

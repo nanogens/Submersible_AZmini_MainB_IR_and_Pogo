@@ -616,7 +616,7 @@ void FillPage(void)
 		Update_ShowFilesQuadrant();
 
 		// The seven C[] calibration values from the sensor
-	    for (uint8_t i = 0; i < PERSSURESENSOR_ROM_ARRAY; i++) {
+	    for (uint8_t i = 0; i < 7; i++) {
 	        PageData.pagedata_w[16 + (2 * i)]     = (uint8_t)(C[i] >> 8);
 	        PageData.pagedata_w[16 + (2 * i) + 1] = (uint8_t)(C[i] & 0xFF);
 	    }
@@ -922,7 +922,14 @@ void IncrementPageSector(void)
       // RecordState.endsector and RecordState.startsector hold the start and end boundaries
 	  if(RecordState.sector >= RecordState.endsector)  // Round Robin, data starts at selected file slot sector
  	  {
-	    RecordState.sector = RecordState.startsector; // Return to beginning of file slot sector
+        if (Sampling.mode == TIME_CONTINUOUSLOOP)
+        {
+          RecordState.sector = RecordState.startsector; // Return to beginning of file slot sector
+        }
+        else // TIME_DONOTLOOP (or other modes)
+        {
+          HaltRecording();
+        }
 	  }
     }
 	// 3. Clear commit to page flag.

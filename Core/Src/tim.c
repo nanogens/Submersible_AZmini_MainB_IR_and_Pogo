@@ -172,7 +172,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
                 {
                     // Mode 1 (Do Not Loop) logs indefinitely; Mode 0 logs until end time is reached
                     DebugMemory4();
-                    Counter.repeat++;
+                    
+                    if (RecordState.started == RECORDING_NOTSTARTED)
+                    {
+                        // Stop recording sequence
+                        RecordState.sector = 0;
+                        Counter.repeat = 0;
+                        is_timer_triggered = 0;
+                        ApplyRecordingPlan.run = PLAN_RUN_NO;
+                        HAL_TIM_Base_Stop_IT(&htim2);
+                        HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);  // turn off LED_A
+                    }
+                    else
+                    {
+                        Counter.repeat++;
+                    }
                 }
             }
         }
