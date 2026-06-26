@@ -394,7 +394,14 @@ void RecordingStart(void)
     // RecordState.started = RECORDING_STARTED will be allocated externally, on command from Viewer or Ring Switch
     RecordState.saverecord = RECORDSTATE_DONOTHING; // tells memory FILLPAGE routine what to do (WRITEPAGE, UPDATEPAGE) while recording.
     RecordState.pageaddress = 0;
-    RecordState.savetime = LESSTHAN30S; // CHANGE TO MATCH SETTINGS FROM VIEWER LATER   LESSTHAN30S; // GREATERTHAN30S;
+    if (Sampling.rate <= 4)
+    {
+      RecordState.savetime = LESSTHAN30S;
+    }
+    else
+    {
+      RecordState.savetime = GREATERTHAN30S;
+    }
     RecordState.page = 0;
     RecordState.fileslot = 0;
     RecordState.totalrecordcount = 0;
