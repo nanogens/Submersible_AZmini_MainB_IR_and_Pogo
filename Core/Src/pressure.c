@@ -490,7 +490,9 @@ uint8_t Acquire_RawPressureReading_TEIntegrated(void)
             }
 #endif
         } else {
+#if DEBUG_SENSOR
             SendString((uint8_t*)"ERROR: Failed to read calibration\r\n");
+#endif
             return 0;
         }
     }

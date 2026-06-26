@@ -254,28 +254,38 @@ uint8_t Write_FileSettings(void)
   {
 
 
+#if DEBUG_SENSOR
   	SendString((uint8_t*)"\n\nIn File Slot Finder For Loop...\r");
+#endif
 
     uint32_t test_address = (BYTES_PER_SECTOR * READSPECIFICFILE_SECTOR) + (PAGEDATA_R_ARRAY * i); // careful not to use Counter.y0 because its used below
     // Clear the array that is to hold the pagedata values to be read first
+#if DEBUG_SENSOR
   	SendString((uint8_t*)"\n\nClearing pagedata_r array to 0...\r");
+#endif
     for(uint16_t j = 0; j < PAGEDATA_R_ARRAY; j++)
     {
 	  PageData.pagedata_r[j] = 0;
     }
 
+#if DEBUG_SENSOR
   	SendString((uint8_t*)"\n\nReading Sector 2, Page X...\r");
+#endif
     Mem_ReadData(test_address, PageData.pagedata_r, PAGEDATA_R_ARRAY);
 
     // Debugging
+#if DEBUG_SENSOR
     SendString((uint8_t*)"Value at [0]: ");
     ByteToHex(PageData.pagedata_r[0], testbyte);
     SendString(testbyte);
+#endif
 
     if(PageData.pagedata_r[0] == FILE_SLOT_OCCUPIED)
     {
       // Page has a record!
+#if DEBUG_SENSOR
       SendString((uint8_t*)"\nPage is Occupied DLE...\n");
+#endif
     }
     else if(PageData.pagedata_r[0] == FILE_SLOT_EMPTY)
     {
@@ -293,7 +303,9 @@ uint8_t Write_FileSettings(void)
       RecordState.startsector = RecordState.sector;
       RecordState.endsector = RecordState.sector + (TOTAL_SECTORS / READSPECIFICFILE_FILESLOTS);
 
+#if DEBUG_SENSOR
       SendString((uint8_t*)"\n\nPage is Empty 0xFF...\r");
+#endif
       // 1. check structure to see all settings are there (should be done before we even enter this function!)
     	  // abort if not
       // 2. write occupied flag and settings to sector 2, (page number = file number)
@@ -311,6 +323,7 @@ uint8_t Write_FileSettings(void)
       Mem_WriteData(test_address, PageData.pagedata_w, PAGEDATA_W_ARRAY);
 
       // Test printout -- temporary
+#if DEBUG_SENSOR
       SendString((uint8_t*)"\n\nWF_RecordState.sector: \r");
       rec[0] = READSPECIFICFILE_SECTOR; // note: its 32 bits, while rec[0] only holds uint8_t
       ByteToHex(rec[0], testbyte);
@@ -322,10 +335,12 @@ uint8_t Write_FileSettings(void)
       SendString(testbyte);
 
       SendString((uint8_t*)"\n");
+#endif
 
       // Print out the page
       PrintOutRecord(READSPECIFICFILE_SECTOR, i);
 
+#if DEBUG_SENSOR
       SendString((uint8_t*)"\n\nCC_RecordState.sector: \r");
       rec[0] = RecordState.sector;
       Uint32ToHexString(rec[0], (uint8_t*)testbyte);
@@ -336,13 +351,16 @@ uint8_t Write_FileSettings(void)
       rec[0] = RecordState.page; // note: its 32 bits, while rec[0] only holds uint8_t
       ByteToHex(rec[0], testbyte);
       SendString(testbyte);
+#endif
 
       return 0;
     }
     else // some unexpected value
     {
       // Something is wrong - abort (no recording)
+#if DEBUG_SENSOR
       SendString((uint8_t*)"\nUnrecognized file slot occupancy indicator detected!  Abort.\n");
+#endif
       return 2;
     }
   }
@@ -360,7 +378,9 @@ void RecordingStart(void)
   if((ReedSwitch.state == ACTIVATED) && (RecordState.started == RECORDING_NOTSTARTED))
   {
 	//RecordState.started = RECORDING_ONGOING;
+#if DEBUG_SENSOR
 	SendString((uint8_t*)"\n\nIn Write_FileSettings, Outcome is RECORDING_ONGOING...\r");
+#endif
 
     for(uint16_t i = 0; i < PAGEDATA_W_ARRAY; i++)
     {
@@ -408,17 +428,23 @@ void RecordingStart(void)
     if(recordingabort == 0) // found an empty file slot to record
     {
       RecordState.started = RECORDING_ONGOING;
+#if DEBUG_SENSOR
       SendString((uint8_t*)"\n\nIn Write_FileSettings, Outcome is RECORDING_ONGOING...\r");
+#endif
     }
     else if(recordingabort == 1) // all file slots full, recording aborted
     {
       RecordState.started = RECORDING_NOSPACE;
+#if DEBUG_SENSOR
       SendString((uint8_t*)"\n\nIn Write_FileSettings, Outcome is RECORDING_NOSPACE...\r");
+#endif
     }
     else // unexpected file slot occupancy indicator encountered, recording aborted
     {
       RecordState.started = RECORDING_UNEXPECTED;  // perhaps we should use a separate define for that, but how do we clear it?
-  	  SendString((uint8_t*)"\n\nIn Write_FileSettings, Outcome is RECORDING_UNEXPECTED...\r");
+#if DEBUG_SENSOR
+   	  SendString((uint8_t*)"\n\nIn Write_FileSettings, Outcome is RECORDING_UNEXPECTED...\r");
+#endif
     }
   }
 }

@@ -39,18 +39,24 @@ uint8_t INTF_Init(void)
 
     // Send register address
     if (HAL_I2C_Master_Transmit(&hi2c1, INTF_BOARD_I2C_ADDR_HAL, tx, 1, 100) != HAL_OK) {
+#if DEBUG_SENSOR
     	SendString((uint8_t*)"Transmit failed\r\n");
+#endif
         return 0;
     }
 
     // Read device ID
     if (HAL_I2C_Master_Receive(&hi2c1, INTF_BOARD_I2C_ADDR_HAL, rx, 1, 100) != HAL_OK) {
+#if DEBUG_SENSOR
         SendString((uint8_t*)"Receive failed\r\n");
+#endif
         return 0;
     }
 
+#if DEBUG_SENSOR
     sprintf(msg, "Received Device ID: 0x%02X\r\n", rx[0]);
     SendString((uint8_t*)msg);
+#endif
 
     if (rx[0] == SLAVE_DEVICE_ID_VALUE) {
         return 1;

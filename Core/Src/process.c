@@ -587,7 +587,9 @@ void Log_ReadSpecificFile_Set(void)
   }
   else  //   Error: LogReadSpecificFile.whichfile exceeds array boundary!
   {
+#if DEBUG_SENSOR
 	SendString((uint8_t*)"\nError: LogReadSpecificFile.whichfile exceeds array boundary!");
+#endif
   }
 }
 

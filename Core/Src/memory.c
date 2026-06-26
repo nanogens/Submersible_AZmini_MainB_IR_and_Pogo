@@ -99,9 +99,11 @@ HAL_StatusTypeDef SPI_Memory_Read(uint32_t address, uint8_t* data, uint16_t leng
 
     MEM_CS_DISABLE();
 
+#if DEBUG_SENSOR
     if (status != HAL_OK) {
     	SendString((uint8_t*)"\nMemory read failed\r\n");
     }
+#endif
     return status;
 }
 
@@ -179,7 +181,9 @@ HAL_StatusTypeDef SPI_WriteEnable(void)
     HAL_Delay(1);
     uint8_t status_reg = SPI_ReadStatusRegister1();
     if (!(status_reg & STATUS_WEL)) {
+#if DEBUG_SENSOR
     	SendString((uint8_t*)"\nWrite enable failed - WEL not set\r\n");
+#endif
         return HAL_ERROR;
     }
     return status;
@@ -196,7 +200,9 @@ HAL_StatusTypeDef SPI_WaitForWriteComplete(void)
     }
     // No delay needed here; just loop until bit 0 is cleared
   }
+#if DEBUG_SENSOR
   SendString((uint8_t*)"\nWrite complete timeout\r\n");
+#endif
   return HAL_TIMEOUT;
 }
 
@@ -359,20 +365,28 @@ void Mem_ClearSector(uint32_t address)
 {
   if (SPI_EraseSectorSafe(address) != HAL_OK)
   {
+#if DEBUG_SENSOR
 	SendString((uint8_t*)"Erase FAILED!\r\n");
+#endif
     return;
   }
+#if DEBUG_SENSOR
   SendString((uint8_t*)"Erase successful!\r\n");
+#endif
 }
 
 void Mem_WriteData(uint32_t address, uint8_t *data, uint16_t length)
 {
   if (SPI_Memory_Write(address, data, length) != HAL_OK)
   {
+#if DEBUG_SENSOR
 	SendString((uint8_t*)"Write FAILED!\r\n");
+#endif
     return;
   }
+#if DEBUG_SENSOR
   SendString((uint8_t*)"Write successful!\r\n");
+#endif
 }
 
 void Mem_ReadData(uint32_t address, uint8_t *data, uint16_t length)
@@ -389,10 +403,14 @@ void Mem_UpdateData(uint32_t address, uint8_t *data, uint16_t length)
 {
   if (SPI_UpdateData(address, data, length) != HAL_OK)
   {
+#if DEBUG_SENSOR
 	SendString((uint8_t*)"Update FAILED!\r\n");
+#endif
     return;
   }
+#if DEBUG_SENSOR
   SendString((uint8_t*)"Update successful!\r\n");
+#endif
 }
 
 void DebugMemory2(void)
@@ -752,7 +770,9 @@ void CommitPage(void)
     {
 	  // 2. Update page
 	  Mem_UpdateData(RecordState.pageaddress, PageData.pagedata_w, PAGEDATA_W_ARRAY);
+#if DEBUG_SENSOR
 	  SendString((uint8_t*)"* Page : Updated.\r\n");
+#endif
 	  // Update Record Ledger in ShowFiles Page in its respective Quadrant (that corresponds to its File Slot)
 	  Update_ShowFilesQuadrant();
     }
@@ -763,7 +783,9 @@ void CommitPage(void)
 	  // The PGWR (0x02) command will erase and write the page
 	  // so we do not need to erase.
 	  Mem_WriteData(RecordState.pageaddress, PageData.pagedata_w, PAGEDATA_W_ARRAY);
+#if DEBUG_SENSOR
 	  SendString((uint8_t*)"* Page : Write.\r\n");
+#endif
 	  // Update Record Ledger in ShowFiles Page in its respective Quadrant (that corresponds to its File Slot)
 	  Update_ShowFilesQuadrant();
     }
@@ -786,7 +808,9 @@ void Update_ShowFilesQuadrant(void)
 
     // Safety: Ensure we don't write past the end of the 512-byte pagedata_r array
     if (offset + 13 >= BYTES_PER_PAGE) {
+#if DEBUG_SENSOR
     	SendString((uint8_t*)"\nError: Fileslot index out of bounds for page\r\n");
+#endif
         return;
     }
 
@@ -858,6 +882,7 @@ void DeterminePageAddress(void)
   uint8_t testbyte[9] = {0};  // Need 9 bytes for 8 hex digits + null terminator
   uint32_t rec[1] = {0};
 
+#if DEBUG_SENSOR
   SendString((uint8_t*)"\n\nDP_RecordState.sector: \r");
   rec[0] = RecordState.sector;
   Uint32ToHexString(rec[0], (uint8_t*)testbyte);
@@ -866,10 +891,11 @@ void DeterminePageAddress(void)
 
   SendString((uint8_t*)"\nDP_RecordState.page: \r");
   rec[0] = RecordState.page;
-    ByteToHex((uint8_t)rec[0], testbyte);
+  ByteToHex((uint8_t)rec[0], testbyte);
   SendString(testbyte);
 
   SendString((uint8_t*)"\n");
+#endif
 
   // since sector and page are likely unsigned integers (uint32_t or uint8_t), they can never be less than 0.
   // so that's taken care of.
@@ -879,7 +905,9 @@ void DeterminePageAddress(void)
   }
   else
   {
+#if DEBUG_SENSOR
 	SendString((uint8_t*)"\nPageAddress Boundary Error !\n");
+#endif
     // RecordState.pageaddress will thus remain unchanged.  i.e. over-writing the same page.
   }
 }
@@ -977,19 +1005,25 @@ void SaveRetrievedPagetoMemory(uint32_t sector, uint8_t page, uint8_t breakup)
   }
   else
   {
+#if DEBUG_SENSOR
 	SendString((uint8_t*)"\nSaveRetrievedPagetoMemory: sector or page value exceeds limits!");
+#endif
   }
 }
 
 // Used for printing variables for debugging
 void PrintVar(uint8_t var)
 {
+#if DEBUG_SENSOR
   uint8_t testbyte[1] = {0};
   uint8_t rec[1] = {0};
 
   rec[0] = var;
   ByteToHex(rec[0], testbyte);
   SendString(testbyte);
+#else
+  (void)var;
+#endif
 }
 
 void DebugMemory4(void)
@@ -1004,7 +1038,9 @@ void DebugMemory4(void)
 
   FillPage(); // Gathers record, writes/updates to page as per frequency, auto-increments after commiting to a page
 
+#if DEBUG_SENSOR
   SendString((uint8_t*)"\nWritten...");
+#endif
 
   /*
   test_address = (4096 * RecordState.sector) + (512 * 0);
@@ -1038,11 +1074,13 @@ void Mem_Retrieve_GlobalInfo(uint8_t whichchip)
   // adjust depending on whichchip
   Mem_ReadData(test_address, PageData.pagedata_r, 8);
 
+#if DEBUG_SENSOR
   SendString((uint8_t*)"Written read: ");
   for(int i=0; i < 8; i++)
   {
     ByteToHex(PageData.pagedata_r[i], page_buf); SendString(page_buf); SendString((uint8_t*)" ");
   }
+#endif
 }
 
 void ClearShowFilesAndMetadata(void)
@@ -1061,6 +1099,8 @@ void ClearShowFilesAndMetadata(void)
         Mem_WriteData(address, PageData.pagedata_w, PAGEDATA_W_ARRAY);
     }
 
+#if DEBUG_SENSOR
     SendString((uint8_t*)"SHOWFILES and Metadata cleared\r\n");
+#endif
 }
 

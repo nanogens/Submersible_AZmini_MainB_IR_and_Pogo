@@ -106,15 +106,21 @@ static void MX_I2C1_Init(void);
 
 void I2C_Scan(void)
 {
+#if DEBUG_SENSOR
     SendString((uint8_t*)"I2C Scanning...\r\n");
+#endif
     for (uint8_t addr = 1; addr < 128; addr++) {
         if (HAL_I2C_IsDeviceReady(&hi2c1, addr << 1, 3, 50) == HAL_OK) {
             char msg[32];
             sprintf(msg, "Device found at 0x%02X\r\n", addr);
+#if DEBUG_SENSOR
             SendString((uint8_t*)msg);
+#endif
         }
     }
+#if DEBUG_SENSOR
     SendString((uint8_t*)"I2C Scan complete\r\n");
+#endif
 }
 
 // Test function to verify Interface Board communication
@@ -122,28 +128,44 @@ void Test_InterfaceBoard(void)
 {
     int32_t pressure = 0, temperature = 0, avdd = 0;
 
+#if DEBUG_SENSOR
     SendString((uint8_t*)"\r\n=== Testing Interface Board ===\r\n");
+#endif
 
     if (INTF_Init()) {
+#if DEBUG_SENSOR
         SendString((uint8_t*)"Interface Board detected (ID: 0x21)\r\n");
+#endif
     } else {
+#if DEBUG_SENSOR
         SendString((uint8_t*)"ERROR: Interface Board not detected!\r\n");
+#endif
         return;
     }
 
     if (INTF_ReadAllRaw(&pressure, &temperature, &avdd)) {
         char msg[64];
         sprintf(msg, "Pressure: %ld (0x%06lX)\r\n", pressure, pressure);
+#if DEBUG_SENSOR
         SendString((uint8_t*)msg);
+#endif
         sprintf(msg, "Temperature: %ld (0x%06lX)\r\n", temperature, temperature);
+#if DEBUG_SENSOR
         SendString((uint8_t*)msg);
+#endif
         sprintf(msg, "AVDD: %ld (0x%06lX)\r\n", avdd, avdd);
+#if DEBUG_SENSOR
         SendString((uint8_t*)msg);
+#endif
     } else {
+#if DEBUG_SENSOR
         SendString((uint8_t*)"ERROR: Failed to read ADC values!\r\n");
+#endif
     }
 
+#if DEBUG_SENSOR
     SendString((uint8_t*)"=== Test Complete ===\r\n\r\n");
+#endif
 }
 #endif
 
@@ -306,7 +328,9 @@ int main(void)
 
 
 #ifdef INTERFACE_BOARD_IMPLEMENTATION
+#if DEBUG_SENSOR
   SendString((uint8_t*)"\r\n=== Starting I2C Test ===\r\n");
+#endif
   HAL_Delay(1000);
   I2C_Scan();
   Test_InterfaceBoard();
@@ -327,9 +351,13 @@ int main(void)
             // Only start if we are in Mode 1 (Do Not Loop) OR if we haven't reached the end time yet
             if (Sampling.mode == TIME_DONOTLOOP || !IsEndTimeReached())
             {
+#if DEBUG_SENSOR
                 SendString((uint8_t*)"\nTarget time reached. Clearing EEPROM memory...\r\n");
+#endif
                 ClearShowFilesAndMetadata();
+#if DEBUG_SENSOR
                 SendString((uint8_t*)"\nEEPROM cleared. Starting recording session...\r\n");
+#endif
 
                 ReedSwitch.state = ACTIVATED;
                 is_timer_triggered = 1;
@@ -656,7 +684,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
