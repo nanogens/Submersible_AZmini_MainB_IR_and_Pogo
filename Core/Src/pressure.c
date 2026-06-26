@@ -481,12 +481,14 @@ uint8_t Acquire_RawPressureReading_TEIntegrated(void)
     // Initialize calibration once or if cleared (C[1] == 0)
     if (C[1] == 0) {
         if (MS5837_InitCalibration()) {
+#if DEBUG_SENSOR
             // Debug: Print calibration coefficients
             for (int i = 0; i < 7; i++) {
                 char msg[64];
                 sprintf(msg, "C[%d] = %d (0x%04X)\r\n", i, C[i], C[i]);
                 SendString((uint8_t*)msg);
             }
+#endif
         } else {
             SendString((uint8_t*)"ERROR: Failed to read calibration\r\n");
             return 0;
@@ -499,9 +501,11 @@ uint8_t Acquire_RawPressureReading_TEIntegrated(void)
     D2 = MS5837_ReadADC(CMD_CONVERT_D2);
     if (D2 == 0xFFFFFFFF) return 0;
 
+#if DEBUG_SENSOR
     char msg[128];
     sprintf(msg, "TE Sensor - D1=%lu, D2=%lu\r\n", D1, D2);
     SendString((uint8_t*)msg);
+#endif
 
     return 1;
 }

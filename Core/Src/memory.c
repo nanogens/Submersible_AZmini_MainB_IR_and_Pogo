@@ -230,6 +230,7 @@ void ByteToHex(uint8_t byte, uint8_t* hexStr)
 
 void SendString(uint8_t* str)
 {
+#if DEBUG_SENSOR
     uint16_t len = 0;
     while(str[len] != '\0') len++;
 
@@ -243,6 +244,9 @@ void SendString(uint8_t* str)
       }
 #endif
     // Remove HAL_Delay(10)
+#else
+    (void)str;
+#endif
 }
 
 void Uint32ToHexString(uint32_t value, uint8_t* output)
@@ -259,6 +263,7 @@ void Uint32ToHexString(uint32_t value, uint8_t* output)
 // Debug Memory Function
 void DebugMemory(void)
 {
+#if DEBUG_SENSOR
     uint32_t test_address = 0x1000;
     uint8_t original_data[2] = {0xAA, 0x55};
     uint8_t updated_data[2] = {0xBB, 0x66};
@@ -341,6 +346,7 @@ void DebugMemory(void)
                (uint8_t*)"MATCH!\r\n" : (uint8_t*)"MISMATCH!\r\n");
 
     SendString((uint8_t*)"=== Test Complete ===\r\n\r\n");
+#endif
 }
 
 // MT ----------------------------------------------
@@ -391,6 +397,7 @@ void Mem_UpdateData(uint32_t address, uint8_t *data, uint16_t length)
 
 void DebugMemory2(void)
 {
+#if DEBUG_SENSOR
   uint32_t test_address = 0x1000;
   uint8_t original_data[2] = {0xAA, 0x55};
   uint8_t updated_data[2] = {0xBB, 0x66};
@@ -423,10 +430,12 @@ void DebugMemory2(void)
              (uint8_t*)"MATCH!\r\n" : (uint8_t*)"MISMATCH!\r\n");
 
   SendString((uint8_t*)"=== Test Complete ===\r\n\r\n\n");
+#endif
 }
 
 void DebugMemory3(void)
 {
+#if DEBUG_SENSOR
   uint32_t test_address = 0x0000;
   uint8_t original_data[2] = {0xAA, 0x55};
   uint8_t updated_data[2] = {0xBB, 0x66};
@@ -481,6 +490,7 @@ void DebugMemory3(void)
              (uint8_t*)"MATCH!\r\n" : (uint8_t*)"MISMATCH!\r\n");
 
   SendString((uint8_t*)"=== Test Complete ===\r\n\r\n\n");
+#endif
 }
 
 void FillPage(void)
@@ -759,7 +769,7 @@ void CommitPage(void)
     }
 
 	// Read and print out the contents of the page.
-	//PrintOutRecord(RecordState.sector, RecordState.page);
+	PrintOutRecord(RecordState.sector, RecordState.page);
 
 	// Advance the page, and the sector if need be.
 	IncrementPageSector();
@@ -825,6 +835,7 @@ void Update_ShowFilesQuadrant(void)
     // This utilizes your SPI_Memory_Write (Opcode 02h) which handles the auto-erase.
     Mem_WriteData(page_address, PageData.pagedata_r, PAGEDATA_R_ARRAY);
 
+#if DEBUG_SENSOR
     // Debug output
     char msg[64];
     sprintf(msg, "DEBUG: Writing RC=%lu to slot %d at offset+10-13\r\n",
@@ -838,6 +849,7 @@ void Update_ShowFilesQuadrant(void)
             PageData.pagedata_r[offset + 12],
             PageData.pagedata_r[offset + 13]);
     SendString((uint8_t*)msg);
+#endif
 }
 
 void DeterminePageAddress(void)
@@ -874,6 +886,7 @@ void DeterminePageAddress(void)
 
 void PrintOutRecord(uint32_t sector, uint8_t page)
 {
+#if DEBUG_SENSOR
   uint8_t hex_buf[QUADRANTS]; // Buffer for "XX " + null terminator
 
   // Populate pagedata_rq[4][128]
@@ -898,6 +911,10 @@ void PrintOutRecord(uint32_t sector, uint8_t page)
     }
   }
   SendString((uint8_t*)"---------------------------------------\r\n");
+#else
+  (void)sector;
+  (void)page;
+#endif
 }
 
 void IncrementPageSector(void)
