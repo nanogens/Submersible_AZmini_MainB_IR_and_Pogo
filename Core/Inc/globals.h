@@ -175,6 +175,7 @@ struct ApplyRecordingPlan1 {
 };
 extern struct ApplyRecordingPlan1 ApplyRecordingPlan;
 extern volatile uint8_t is_timer_triggered;
+extern volatile uint8_t recording_timer_expired;
 
 
 struct Memory1 {

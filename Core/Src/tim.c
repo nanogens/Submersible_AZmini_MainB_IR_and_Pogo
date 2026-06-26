@@ -144,51 +144,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         // =======================================================
         if (is_timer_expired)
         {
-            Blinky(); // Toggle LED_A every second to verify timer interrupts are working
-
-            // Try to start a recording if the switch is ON (ReedSwitch.state == ACTIVATED)
-            RecordingStart();
-
-            if (RecordState.started == RECORDING_ONGOING)
-            {
-                // Check if we are in Time - Continuous Loop mode and end time is reached
-                if (Sampling.mode == TIME_CONTINUOUSLOOP && IsEndTimeReached())
-                {
-                    // Execute stop recording sequence
-                    ReedSwitch.state = DEACTIVATED;
-                    DebugMemory4(); // Write final records and stop
-
-                    RecordState.started = RECORDING_NOTSTARTED;
-                    RecordState.sector = 0;
-                    Counter.repeat = 0;
-
-                    is_timer_triggered = 0;
-                    ApplyRecordingPlan.run = PLAN_RUN_NO;
-                    HAL_TIM_Base_Stop_IT(&htim2);
-                    HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);  // turn off LED_A
-
-                }
-                else // TIME_DONOTLOOP
-                {
-                    // Mode 1 (Do Not Loop) logs indefinitely; Mode 0 logs until end time is reached
-                    DebugMemory4();
-                    
-                    if (RecordState.started == RECORDING_NOTSTARTED)
-                    {
-                        // Stop recording sequence
-                        RecordState.sector = 0;
-                        Counter.repeat = 0;
-                        is_timer_triggered = 0;
-                        ApplyRecordingPlan.run = PLAN_RUN_NO;
-                        HAL_TIM_Base_Stop_IT(&htim2);
-                        HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);  // turn off LED_A
-                    }
-                    else
-                    {
-                        Counter.repeat++;
-                    }
-                }
-            }
+            Blinky(); // Toggle LED_A to verify timer interrupts are working
+            recording_timer_expired = 1;
         }
         // =======================================================
     }

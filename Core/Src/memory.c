@@ -759,7 +759,7 @@ void CommitPage(void)
     }
 
 	// Read and print out the contents of the page.
-	PrintOutRecord(RecordState.sector, RecordState.page);
+	//PrintOutRecord(RecordState.sector, RecordState.page);
 
 	// Advance the page, and the sector if need be.
 	IncrementPageSector();

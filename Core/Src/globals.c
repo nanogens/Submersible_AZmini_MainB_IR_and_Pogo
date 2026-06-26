@@ -16,6 +16,7 @@ struct Cloud1 Cloud;
 struct Misc1 Misc;
 struct ApplyRecordingPlan1 ApplyRecordingPlan;
 volatile uint8_t is_timer_triggered = 0;
+volatile uint8_t recording_timer_expired = 0;
 struct Memory1 Memory;
 
 struct Surface1 Surface;

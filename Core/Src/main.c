@@ -344,6 +344,53 @@ int main(void)
         }
     }
 
+    if (recording_timer_expired)
+    {
+        recording_timer_expired = 0;
+
+        // Try to start a recording if the switch is ON (ReedSwitch.state == ACTIVATED)
+        RecordingStart();
+
+        if (RecordState.started == RECORDING_ONGOING)
+        {
+            // Check if we are in Time - Continuous Loop mode and end time is reached
+            if (Sampling.mode == TIME_CONTINUOUSLOOP && IsEndTimeReached())
+            {
+                // Execute stop recording sequence
+                ReedSwitch.state = DEACTIVATED;
+                DebugMemory4(); // Write final records and stop
+
+                RecordState.started = RECORDING_NOTSTARTED;
+                RecordState.sector = 0;
+                Counter.repeat = 0;
+
+                is_timer_triggered = 0;
+                ApplyRecordingPlan.run = PLAN_RUN_NO;
+                HAL_TIM_Base_Stop_IT(&htim2);
+                HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);  // turn off LED_A
+            }
+            else // TIME_DONOTLOOP (or continuous loop mode before end time)
+            {
+                DebugMemory4();
+
+                if (RecordState.started == RECORDING_NOTSTARTED)
+                {
+                    // Stop recording sequence
+                    RecordState.sector = 0;
+                    Counter.repeat = 0;
+                    is_timer_triggered = 0;
+                    ApplyRecordingPlan.run = PLAN_RUN_NO;
+                    HAL_TIM_Base_Stop_IT(&htim2);
+                    HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);  // turn off LED_A
+                }
+                else
+                {
+                    Counter.repeat++;
+                }
+            }
+        }
+    }
+
     //TestingRuns();
 
     //SendByte(0x55);

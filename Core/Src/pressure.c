@@ -425,27 +425,27 @@ void I2C_Recovery(void)
     // Toggle SCL to try to free stuck devices
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-    // Get current I2C GPIO configuration
-    GPIO_InitStruct.Pin = GPIO_PIN_8 | GPIO_PIN_9;  // SCL & SDA pins
+    // Get current I2C GPIO configuration (SCL: PA9, SDA: PA10)
+    GPIO_InitStruct.Pin = GPIO_PIN_9 | GPIO_PIN_10;  // SCL & SDA pins
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);  // Adjust port to your I2C pins
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     // Generate clock pulses
     for(int i = 0; i < 10; i++) {
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);  // SCL low
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);  // SCL low
         HAL_Delay(1);
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);    // SCL high
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);    // SCL high
         HAL_Delay(1);
     }
 
     // Send STOP condition
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_RESET);  // SDA low
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);  // SDA low
     HAL_Delay(1);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);    // SCL high
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);     // SCL high
     HAL_Delay(1);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_SET);    // SDA high
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);    // SDA high
     HAL_Delay(1);
 
     // Reinitialize I2C
@@ -478,12 +478,9 @@ uint8_t MS5837_InitCalibration(void)
 //==============================================================================
 uint8_t Acquire_RawPressureReading_TEIntegrated(void)
 {
-    static uint8_t calibration_initialized = 0;
-
-    // Initialize calibration once
-    if (!calibration_initialized) {
+    // Initialize calibration once or if cleared (C[1] == 0)
+    if (C[1] == 0) {
         if (MS5837_InitCalibration()) {
-            calibration_initialized = 1;
             // Debug: Print calibration coefficients
             for (int i = 0; i < 7; i++) {
                 char msg[64];
