@@ -1004,10 +1004,19 @@ void SaveRetrievedPagetoMemory(uint32_t sector, uint8_t page, uint8_t breakup)
       {
         PageData.pagedata_r[i] = PageData.pagedata_w[i];
       }
+#if DEBUG_SENSOR
+      SendString((uint8_t*)"[DEBUG] Served active page from RAM buffer bypass!\r\n");
+#endif
     }
     else
     {
       Mem_ReadData(test_address, PageData.pagedata_r, PAGEDATA_R_ARRAY);
+#if DEBUG_SENSOR
+      char dbg_msg[128];
+      sprintf(dbg_msg, "[DEBUG] Read page from EEPROM. test_address: %lu, started: %d, pageaddress: %lu\r\n",
+              test_address, RecordState.started, RecordState.pageaddress);
+      SendString((uint8_t*)dbg_msg);
+#endif
     }
 
     if(breakup == BREAK_INTO_QUADRANT_YES)
