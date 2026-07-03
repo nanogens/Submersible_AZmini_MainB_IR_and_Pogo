@@ -652,6 +652,19 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
 {
   is_sleeping = true;
 
+  // Verify if the RTC clock is actually ticking
+  RTC_ReadTime();
+  char t1[64];
+  sprintf(t1, "[DEBUG] Clock before delay: %02d:%02d:%02d\r\n", Time.read_hour, Time.read_minute, Time.read_second);
+  SendString((uint8_t*)t1);
+
+  HAL_Delay(1000);
+
+  RTC_ReadTime();
+  char t2[64];
+  sprintf(t2, "[DEBUG] Clock after delay:  %02d:%02d:%02d\r\n", Time.read_hour, Time.read_minute, Time.read_second);
+  SendString((uint8_t*)t2);
+
   // 1. Configure RTC Wakeup Timer to trigger (interval_seconds - 1) seconds from now
   HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
 
