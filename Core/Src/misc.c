@@ -652,6 +652,7 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
 {
   is_sleeping = true;
 
+#if DEBUG_SENSOR
   // Verify if the RTC clock is actually ticking
   RTC_ReadTime();
   char t1[64];
@@ -664,6 +665,7 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   char t2[64];
   sprintf(t2, "[DEBUG] Clock after delay:  %02d:%02d:%02d\r\n", Time.read_hour, Time.read_minute, Time.read_second);
   SendString((uint8_t*)t2);
+#endif
 
   // 1. Configure RTC Wakeup Timer to trigger (interval_seconds - 1) seconds from now
   HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
@@ -675,6 +677,7 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   // The timer count is 0-indexed, so we subtract 1.
   // We wake up 1 second early, so we configure it for (interval_seconds - 1) - 1.
   HAL_StatusTypeDef status = HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, interval_seconds - 2, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+#if DEBUG_SENSOR
   if (status != HAL_OK)
   {
       char err_msg[64];
@@ -688,6 +691,7 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
 
   // Allow the debug messages to finish transmitting
   HAL_Delay(50);
+#endif
 
   // Turn off LED_A during sleep to save power and provide status indication
   HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
