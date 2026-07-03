@@ -649,59 +649,6 @@ uint32_t Get_Sampling_Interval_Seconds(void)
     }
 }
 
-void Configure_UART_Wakeup(void)
-{
-#ifdef IR_USART2_SEL
-  // Abort any ongoing IrDA receive to prevent state-machine lock
-  HAL_IRDA_AbortReceive(&hirda2);
-
-  // Clear any pending overrun, noise, framing, or parity flags on USART2
-  __HAL_IRDA_CLEAR_FLAG(&hirda2, IRDA_CLEAR_OREF | IRDA_CLEAR_NEF | IRDA_CLEAR_PEF | IRDA_CLEAR_FEF);
-  volatile uint32_t temp = USART2->RDR;
-  (void)temp;
-
-  // Enable SYSCFG clock (required to map GPIO pins to EXTI lines)
-  __HAL_RCC_SYSCFG_CLK_ENABLE();
-
-  // Configure PA3 (USART2_RX) as an EXTI falling-edge interrupt pin
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  GPIO_InitStruct.Pin = GPIO_PIN_3;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  // Clear pending EXTI flags and enable the NVIC interrupt vector
-  __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_3);
-  HAL_NVIC_ClearPendingIRQ(EXTI2_3_IRQn);
-  HAL_NVIC_EnableIRQ(EXTI2_3_IRQn);
-#endif
-}
-
-void Restore_UART_After_Wakeup(void)
-{
-#ifdef IR_USART2_SEL
-  // Disable the EXTI vector in NVIC to prevent subsequent noise wakeups
-  HAL_NVIC_DisableIRQ(EXTI2_3_IRQn);
-
-  // Configure PA3 back to Alternate Function (USART2_RX)
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  GPIO_InitStruct.Pin = GPIO_PIN_3;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF4_USART2;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  // Clear any overrun, framing error, parity error flags on USART2
-  __HAL_IRDA_CLEAR_FLAG(&hirda2, IRDA_CLEAR_OREF | IRDA_CLEAR_NEF | IRDA_CLEAR_PEF | IRDA_CLEAR_FEF);
-  volatile uint32_t temp = USART2->RDR;
-  (void)temp;
-
-  // Restart the IrDA receive interrupt
-  HAL_IRDA_Receive_IT(&hirda2, &rx_buffer[0], 1);
-#endif
-}
-
 extern volatile uint8_t recording_timer_expired;
 
 void Enter_Recording_Sleep(uint32_t interval_seconds)
@@ -749,10 +696,7 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   HAL_Delay(50);
 #endif
 
-  // Configure RX pin as falling edge interrupt to wake CPU on serial traffic
-  Configure_UART_Wakeup();
-
-  // Configure REC_START (reed switch / magnet) pin as EXTI interrupt to wake CPU
+  // Configure REC_START (phototransceiver / photodiode) pin as EXTI interrupt to wake CPU
   Set_REC_START_Pin_As_Interrupt();
   __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
   HAL_NVIC_ClearPendingIRQ(EXTI4_15_IRQn);
@@ -783,10 +727,8 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_UPDATE);
   HAL_NVIC_ClearPendingIRQ(TIM2_IRQn);
 
-  // Clear pending EXTI line flags for RX and Reed Switch wakeup lines
-  __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_3);
+  // Clear pending EXTI line flags for Reed Switch / Photodiode wakeup lines
   __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
-  HAL_NVIC_ClearPendingIRQ(EXTI2_3_IRQn);
   HAL_NVIC_ClearPendingIRQ(EXTI4_15_IRQn);
 
   // Clear any pending UART / LPUART interrupts at the NVIC level
@@ -812,10 +754,20 @@ void Exit_Recording_Sleep(void)
   // 1. Restore System Clock (HSE/PLL)
   SystemClock_Config();
 
-  // Restore UART RX pin configuration and restart receiver interrupt
-  Restore_UART_After_Wakeup();
+  // Clear pending UART flags and restart receiver interrupts
+#ifdef IR_USART2_SEL
+  __HAL_IRDA_CLEAR_FLAG(&hirda2, IRDA_CLEAR_OREF | IRDA_CLEAR_NEF | IRDA_CLEAR_PEF | IRDA_CLEAR_FEF);
+  volatile uint32_t temp = USART2->RDR;
+  (void)temp;
+  HAL_IRDA_Receive_IT(&hirda2, &rx_buffer[0], 1);
+#else
+  __HAL_UART_CLEAR_FLAG(&hlpuart1, UART_FLAG_ORE | UART_FLAG_NE | UART_FLAG_FE | UART_FLAG_PE);
+  volatile uint32_t temp = LPUART1->RDR;
+  (void)temp;
+  HAL_UART_Receive_IT(&hlpuart1, &rx_buffer[0], 1);
+#endif
 
-  // Disable EXTI interrupt for reed switch and restore pin to normal input
+  // Disable EXTI interrupt for reed switch/photodiode and restore pin to normal input
   HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
   Set_REC_START_Pin_As_Input();
 
