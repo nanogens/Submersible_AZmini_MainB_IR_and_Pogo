@@ -680,6 +680,9 @@ void FillPage(void)
   // update the total count of committed records in the file slot
   RecordState.totalrecordcount = RecordState.totalrecordcount + 1;
 
+  // Update ShowFiles ledger in EEPROM so that the PC always knows the current record count
+  Update_ShowFilesQuadrant();
+
   //if((recordoffset + 32) == PAGEDATA_W_ARRAY)  // 512 == 512 meaning page buffer is filled, ready to write to page
   if(RecordHeader.recordcount == RECORDS_PER_PAGE)
   {
@@ -988,7 +991,18 @@ void SaveRetrievedPagetoMemory(uint32_t sector, uint8_t page, uint8_t breakup)
     // Clear the array using a local counter
     Clear_PagedataRead_Array();
 
-    Mem_ReadData(test_address, PageData.pagedata_r, PAGEDATA_R_ARRAY);
+    if (RecordState.started != RECORDING_NOTSTARTED && test_address == RecordState.pageaddress)
+    {
+      // Serve data directly from the active RAM write buffer for the currently recording page
+      for (int i = 0; i < PAGEDATA_R_ARRAY; i++)
+      {
+        PageData.pagedata_r[i] = PageData.pagedata_w[i];
+      }
+    }
+    else
+    {
+      Mem_ReadData(test_address, PageData.pagedata_r, PAGEDATA_R_ARRAY);
+    }
 
     if(breakup == BREAK_INTO_QUADRANT_YES)
     {
