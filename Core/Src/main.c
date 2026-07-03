@@ -196,14 +196,10 @@ void HAL_IRDA_ErrorCallback(IRDA_HandleTypeDef *hirda)
 {
     if(hirda->Instance == USART2)
     {
-        last_activity_time = HAL_GetTick();
-        __HAL_IRDA_CLEAR_FLAG(hirda, IRDA_CLEAR_OREF | IRDA_CLEAR_NEF | IRDA_CLEAR_PEF | IRDA_CLEAR_FEF);
         volatile uint32_t temp;
+        temp = USART2->ISR;
         temp = USART2->RDR;
         (void)temp;
-        
-        HAL_IRDA_DeInit(hirda);
-        HAL_IRDA_Init(hirda);
         HAL_IRDA_Receive_IT(&hirda2, rx_buffer, 1);
     }
 }
@@ -857,9 +853,13 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : REC_START_Pin */
   GPIO_InitStruct.Pin = REC_START_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(REC_START_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
