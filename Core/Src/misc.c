@@ -583,6 +583,11 @@ void Enter_Deep_Sleep(void)
 {
   is_sleeping = true;
 
+  // Visual cue: Turn ON LED_A for 1 second right before going to sleep
+  HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_SET);
+  HAL_Delay(1000);
+  HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
+
   // 1. Configure REC_START pin as EXTI interrupt to wake the CPU
   Set_REC_START_Pin_As_Interrupt();
   __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
@@ -606,6 +611,15 @@ void Exit_Deep_Sleep(void)
 {
   // 1. Restore System Clock (HSE/PLL)
   SystemClock_Config();
+
+  // Visual cue: Blink LED_A rapidly 5 times to confirm wakeup
+  for (int i = 0; i < 5; i++)
+  {
+      HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_SET);
+      HAL_Delay(50);
+      HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
+      HAL_Delay(50);
+  }
 
   // 2. Disable EXTI vector and restore pin to standard digital input
   HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
