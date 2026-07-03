@@ -84,6 +84,9 @@ volatile uint8_t ignore_echo_usart2;
 #else
   UART_HandleTypeDef* pActiveUart = &hlpuart1;
 #endif
+
+volatile uint32_t last_activity_time;
+volatile bool is_sleeping = false;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -175,6 +178,7 @@ void HAL_IRDA_RxCpltCallback(IRDA_HandleTypeDef *hirda)
 {
     if(hirda->Instance == USART2)
     {
+        last_activity_time = HAL_GetTick();
         IncomingByteCheck();
         HAL_IRDA_Receive_IT(hirda, &rx_buffer[0], 1);
     }
@@ -192,10 +196,14 @@ void HAL_IRDA_ErrorCallback(IRDA_HandleTypeDef *hirda)
 {
     if(hirda->Instance == USART2)
     {
+        last_activity_time = HAL_GetTick();
+        __HAL_IRDA_CLEAR_FLAG(hirda, IRDA_CLEAR_OREF | IRDA_CLEAR_NEF | IRDA_CLEAR_PEF | IRDA_CLEAR_FEF);
         volatile uint32_t temp;
-        temp = USART2->ISR;
         temp = USART2->RDR;
         (void)temp;
+        
+        HAL_IRDA_DeInit(hirda);
+        HAL_IRDA_Init(hirda);
         HAL_IRDA_Receive_IT(&hirda2, rx_buffer, 1);
     }
 }
@@ -205,6 +213,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *hlpuart1)
 {
     if(hlpuart1->Instance == LPUART1)
     {
+        last_activity_time = HAL_GetTick();
         IncomingByteCheck();
         HAL_UART_Receive_IT(hlpuart1, &rx_buffer[0], 1);
     }
@@ -222,6 +231,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == LPUART1)
     {
+        last_activity_time = HAL_GetTick();
         DE_RE_DISABLE();
         tx_busy = 0;
         tx_index = 0;
@@ -336,6 +346,7 @@ int main(void)
   Test_InterfaceBoard();
 #endif
 
+  last_activity_time = HAL_GetTick();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -343,6 +354,19 @@ int main(void)
   while (1)
   {
     ProcessMsg();
+
+    // Sleep Watchdog
+    if (RecordState.started == RECORDING_NOTSTARTED && ApplyRecordingPlan.run == PLAN_RUN_NO)
+    {
+        if (HAL_GetTick() - last_activity_time > 120000) // 2 minutes (120000 ms)
+        {
+#if DEBUG_SENSOR
+            SendString((uint8_t*)"Inactivity timeout reached. Entering STOP mode...\r\n");
+            HAL_Delay(50); // Let the UART transmission complete
+#endif
+            Enter_Deep_Sleep();
+        }
+    }
 
     if (!is_timer_triggered && ApplyRecordingPlan.run == PLAN_RUN_YES)
     {

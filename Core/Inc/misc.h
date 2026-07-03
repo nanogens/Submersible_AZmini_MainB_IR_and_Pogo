@@ -24,5 +24,10 @@ uint8_t Get24Hour(uint8_t hour12, uint8_t ampm);
 uint8_t IsTargetTimeReached(void);
 uint8_t IsEndTimeReached(void);
 
+void Enter_Deep_Sleep(void);
+void Exit_Deep_Sleep(void);
+void Set_REC_START_Pin_As_Input(void);
+void Set_REC_START_Pin_As_Interrupt(void);
+
 #endif /* INC_MISC_H_ */
 

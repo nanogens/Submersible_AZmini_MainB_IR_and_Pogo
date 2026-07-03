@@ -170,5 +170,8 @@ void USART2_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
-
+void EXTI4_15_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(REC_START_Pin);
+}
 /* USER CODE END 1 */

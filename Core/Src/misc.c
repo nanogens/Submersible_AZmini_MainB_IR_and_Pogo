@@ -550,3 +550,81 @@ uint8_t IsEndTimeReached(void)
   return 0;
 }
 
+extern volatile uint32_t last_activity_time;
+extern volatile bool is_sleeping;
+#ifdef IR_USART2_SEL
+extern IRDA_HandleTypeDef hirda2;
+#else
+extern UART_HandleTypeDef hlpuart1;
+#endif
+extern uint8_t rx_buffer[];
+extern void SystemClock_Config(void);
+
+void Set_REC_START_Pin_As_Input(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = REC_START_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(REC_START_GPIO_Port, &GPIO_InitStruct);
+}
+
+void Set_REC_START_Pin_As_Interrupt(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = REC_START_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(REC_START_GPIO_Port, &GPIO_InitStruct);
+}
+
+void Enter_Deep_Sleep(void)
+{
+  is_sleeping = true;
+
+  // 1. Configure REC_START pin as EXTI interrupt to wake the CPU
+  Set_REC_START_Pin_As_Interrupt();
+  __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+
+  // 2. Abort UART RX to prevent clock transition errors on wakeup
+#ifdef IR_USART2_SEL
+  HAL_IRDA_AbortReceive(&hirda2);
+#else
+  HAL_UART_AbortReceive(&hlpuart1);
+#endif
+
+  // 3. Enter Stop Mode
+  HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+
+  // 4. On Wakeup: immediately restore clocks and resume
+  Exit_Deep_Sleep();
+}
+
+void Exit_Deep_Sleep(void)
+{
+  // 1. Restore System Clock (HSE/PLL)
+  SystemClock_Config();
+
+  // 2. Disable EXTI vector and restore pin to standard digital input
+  HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
+  Set_REC_START_Pin_As_Input();
+
+  // 3. Clear pending UART errors & flush RX data register, then restart RX
+#ifdef IR_USART2_SEL
+  __HAL_IRDA_CLEAR_FLAG(&hirda2, IRDA_CLEAR_OREF | IRDA_CLEAR_NEF | IRDA_CLEAR_PEF | IRDA_CLEAR_FEF);
+  volatile uint32_t temp = USART2->RDR;
+  (void)temp;
+  HAL_IRDA_Receive_IT(&hirda2, &rx_buffer[0], 1);
+#else
+  __HAL_UART_CLEAR_FLAG(&hlpuart1, UART_FLAG_ORE | UART_FLAG_NE | UART_FLAG_FE | UART_FLAG_PE);
+  volatile uint32_t temp = LPUART1->RDR;
+  (void)temp;
+  HAL_UART_Receive_IT(&hlpuart1, &rx_buffer[0], 1);
+#endif
+
+  last_activity_time = HAL_GetTick();
+  is_sleeping = false;
+}
+
+
