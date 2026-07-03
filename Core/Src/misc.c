@@ -585,6 +585,59 @@ void Set_REC_START_Pin_As_Interrupt(void)
   HAL_GPIO_Init(REC_START_GPIO_Port, &GPIO_InitStruct);
 }
 
+void Configure_UART_Wakeup(void)
+{
+#ifdef IR_USART2_SEL
+  // Abort any ongoing IrDA receive to prevent state-machine lock
+  HAL_IRDA_AbortReceive(&hirda2);
+
+  // Clear any pending overrun, noise, framing, or parity flags on USART2
+  __HAL_IRDA_CLEAR_FLAG(&hirda2, IRDA_CLEAR_OREF | IRDA_CLEAR_NEF | IRDA_CLEAR_PEF | IRDA_CLEAR_FEF);
+  volatile uint32_t temp = USART2->RDR;
+  (void)temp;
+
+  // Enable SYSCFG clock (required to map GPIO pins to EXTI lines)
+  __HAL_RCC_SYSCFG_CLK_ENABLE();
+
+  // Configure PA3 (USART2_RX) as an EXTI falling-edge interrupt pin
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  // Clear pending EXTI flags and enable the NVIC interrupt vector
+  __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_3);
+  HAL_NVIC_ClearPendingIRQ(EXTI2_3_IRQn);
+  HAL_NVIC_EnableIRQ(EXTI2_3_IRQn);
+#endif
+}
+
+void Restore_UART_After_Wakeup(void)
+{
+#ifdef IR_USART2_SEL
+  // Disable the EXTI vector in NVIC to prevent subsequent noise wakeups
+  HAL_NVIC_DisableIRQ(EXTI2_3_IRQn);
+
+  // Configure PA3 back to Alternate Function (USART2_RX)
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF4_USART2;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  // Clear any overrun, framing error, parity error flags on USART2
+  __HAL_IRDA_CLEAR_FLAG(&hirda2, IRDA_CLEAR_OREF | IRDA_CLEAR_NEF | IRDA_CLEAR_PEF | IRDA_CLEAR_FEF);
+  volatile uint32_t temp = USART2->RDR;
+  (void)temp;
+
+  // Restart the IrDA receive interrupt
+  HAL_IRDA_Receive_IT(&hirda2, &rx_buffer[0], 1);
+#endif
+}
+
 void Enter_Deep_Sleep(void)
 {
   is_sleeping = true;
@@ -595,22 +648,8 @@ void Enter_Deep_Sleep(void)
   HAL_NVIC_ClearPendingIRQ(EXTI4_15_IRQn);
   HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
-  // 2. Abort UART RX to prevent clock transition errors on wakeup
-#ifdef IR_USART2_SEL
-  HAL_IRDA_AbortReceive(&hirda2);
-#else
-  HAL_UART_AbortReceive(&hlpuart1);
-#endif
-
-  // 3. Shut off the load switch to power down sensors and EEPROM
-  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_RESET);
-
-  // 4. Put SPI and I2C pins into Analog No-Pull mode to prevent back-feeding current
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_9 | GPIO_PIN_10;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  // 2. Configure RX pin as falling edge interrupt to wake CPU on serial traffic
+  Configure_UART_Wakeup();
 
   // Clear pending EXTI line flags for Reed Switch / Photodiode wakeup lines
   __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
@@ -619,10 +658,10 @@ void Enter_Deep_Sleep(void)
   // Clear SysTick pending interrupt flag
   SCB->ICSR = SCB_ICSR_PENDSTCLR_Msk;
 
-  // 5. Enter Stop Mode
+  // 3. Enter Stop Mode (transceiver remains powered)
   HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
 
-  // 6. On Wakeup: immediately restore clocks and resume
+  // 4. On Wakeup: immediately restore clocks and resume
   Exit_Deep_Sleep();
 }
 
@@ -635,31 +674,11 @@ void Exit_Deep_Sleep(void)
   HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
   Set_REC_START_Pin_As_Input();
 
-  // 3. Power up the general load switch immediately on wakeup (powers IrDA transceiver and sensor EEPROM)
-  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
-  last_power_on_time = HAL_GetTick();
-
-  // 4. Re-initialize SPI1 and I2C1 pin mappings
-  HAL_SPI_MspInit(&hspi1);
-  HAL_I2C_MspInit(&hi2c1);
-
-  // 5. Clear pending UART errors & flush RX data register, then restart RX
-#ifdef IR_USART2_SEL
-  __HAL_IRDA_CLEAR_FLAG(&hirda2, IRDA_CLEAR_OREF | IRDA_CLEAR_NEF | IRDA_CLEAR_PEF | IRDA_CLEAR_FEF);
-  volatile uint32_t temp = USART2->RDR;
-  (void)temp;
-  HAL_IRDA_Receive_IT(&hirda2, &rx_buffer[0], 1);
-#else
-  __HAL_UART_CLEAR_FLAG(&hlpuart1, UART_FLAG_ORE | UART_FLAG_NE | UART_FLAG_FE | UART_FLAG_PE);
-  volatile uint32_t temp = LPUART1->RDR;
-  (void)temp;
-  HAL_UART_Receive_IT(&hlpuart1, &rx_buffer[0], 1);
-#endif
+  // 3. Restore UART RX pin configuration and restart receiver interrupt
+  Restore_UART_After_Wakeup();
 
   is_sleeping = false;
 }
-
-
 
 uint32_t Get_Sampling_Interval_Seconds(void)
 {
