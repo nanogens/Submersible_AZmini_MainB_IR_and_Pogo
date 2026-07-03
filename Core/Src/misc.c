@@ -654,6 +654,9 @@ void Configure_UART_Wakeup(void)
   // Abort any ongoing IrDA receive to prevent state-machine lock
   HAL_IRDA_AbortReceive(&hirda2);
 
+  // Enable SYSCFG clock (required to map GPIO pins to EXTI lines)
+  __HAL_RCC_SYSCFG_CLK_ENABLE();
+
   // Configure PA3 (USART2_RX) as an EXTI falling-edge interrupt pin
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   GPIO_InitStruct.Pin = GPIO_PIN_3;
@@ -743,6 +746,12 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   // Configure RX pin as falling edge interrupt to wake CPU on serial traffic
   Configure_UART_Wakeup();
 
+  // Configure REC_START (reed switch / magnet) pin as EXTI interrupt to wake CPU
+  Set_REC_START_Pin_As_Interrupt();
+  __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
+  HAL_NVIC_ClearPendingIRQ(EXTI4_15_IRQn);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+
   // Turn off LED_A during sleep to save power and provide status indication
   HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
 
@@ -789,6 +798,10 @@ void Exit_Recording_Sleep(void)
 
   // Restore UART RX pin configuration and restart receiver interrupt
   Restore_UART_After_Wakeup();
+
+  // Disable EXTI interrupt for reed switch and restore pin to normal input
+  HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
+  Set_REC_START_Pin_As_Input();
 
   // Re-enable IrDA and LPUART interrupts in the NVIC
   HAL_NVIC_EnableIRQ(USART2_IRQn);
