@@ -340,6 +340,11 @@ int main(void)
   #define SLEEP_TEST_ENABLED 1
   #if SLEEP_TEST_ENABLED
   #if DEBUG_SENSOR
+  {
+    char pin_msg[64];
+    sprintf(pin_msg, "REC_START (PB13) initial state: %d\r\n", HAL_GPIO_ReadPin(REC_START_GPIO_Port, REC_START_Pin));
+    SendString((uint8_t*)pin_msg);
+  }
   SendString((uint8_t*)"Entering STOP mode in 5 seconds... Wave light to wake up!\r\n");
   #endif
   // Turn off LEDs so we can observe the toggle on wakeup
