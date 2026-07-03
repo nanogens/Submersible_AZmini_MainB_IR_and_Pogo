@@ -761,7 +761,9 @@ void HaltRecording(void)
 		CommitPage();
 	}
 	RecordState.started = RECORDING_NOTSTARTED; // Stop recording, we exit the recording in the main loop
+#if DEBUG_SENSOR
 	SendString((uint8_t*)"-=Final page of record written.=-\r\n");
+#endif
 }
 
 void CommitPage(void)
