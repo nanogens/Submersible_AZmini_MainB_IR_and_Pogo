@@ -339,19 +339,23 @@ int main(void)
   // Sleep Test Sequence: Wait 5 seconds, then enter STOP mode
   #define SLEEP_TEST_ENABLED 1
   #if SLEEP_TEST_ENABLED
-  #if DEBUG_SENSOR
-  {
-    char pin_msg[64];
-    sprintf(pin_msg, "REC_START (PB13) initial state: %d\r\n", HAL_GPIO_ReadPin(REC_START_GPIO_Port, REC_START_Pin));
-    SendString((uint8_t*)pin_msg);
-  }
-  SendString((uint8_t*)"Entering STOP mode in 5 seconds... Wave light to wake up!\r\n");
-  #endif
   // Turn off LEDs so we can observe the toggle on wakeup
   HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
-  
-  HAL_Delay(5000);
+
+  #if DEBUG_SENSOR
+  SendString((uint8_t*)"Entering STOP mode in 5 seconds... Wave light to wake up!\r\n");
+  #endif
+
+  // Print pin state every second during the 5-second delay
+  for (int s = 5; s > 0; s--) {
+      #if DEBUG_SENSOR
+      char pin_msg[64];
+      sprintf(pin_msg, "Seconds remaining: %d - REC_START (PB13) state: %d\r\n", s, HAL_GPIO_ReadPin(REC_START_GPIO_Port, REC_START_Pin));
+      SendString((uint8_t*)pin_msg);
+      #endif
+      HAL_Delay(1000);
+  }
   
   // Enter Stop Mode
   HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
@@ -360,6 +364,9 @@ int main(void)
   SystemClock_Config();
   #if DEBUG_SENSOR
   SendString((uint8_t*)"Woke up from STOP mode successfully!\r\n");
+  char post_msg[64];
+  sprintf(post_msg, "REC_START (PB13) post-wakeup state: %d\r\n", HAL_GPIO_ReadPin(REC_START_GPIO_Port, REC_START_Pin));
+  SendString((uint8_t*)post_msg);
   #endif
   #endif
 
