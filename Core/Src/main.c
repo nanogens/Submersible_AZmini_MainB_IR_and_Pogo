@@ -336,6 +336,28 @@ int main(void)
   Test_InterfaceBoard();
 #endif
 
+  // Sleep Test Sequence: Wait 5 seconds, then enter STOP mode
+  #define SLEEP_TEST_ENABLED 1
+  #if SLEEP_TEST_ENABLED
+  #if DEBUG_SENSOR
+  SendString((uint8_t*)"Entering STOP mode in 5 seconds... Wave light to wake up!\r\n");
+  #endif
+  // Turn off LEDs so we can observe the toggle on wakeup
+  HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
+  
+  HAL_Delay(5000);
+  
+  // Enter Stop Mode
+  HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+  
+  // Wakeup: Restore clocks
+  SystemClock_Config();
+  #if DEBUG_SENSOR
+  SendString((uint8_t*)"Woke up from STOP mode successfully!\r\n");
+  #endif
+  #endif
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -833,9 +855,13 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : REC_START_Pin */
   GPIO_InitStruct.Pin = REC_START_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(REC_START_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -843,7 +869,14 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  if (GPIO_Pin == REC_START_Pin)
+  {
+      // Toggle LED_A to give a clear visual confirmation of wakeup
+      HAL_GPIO_TogglePin(LED_A_GPIO_Port, LED_A_Pin);
+  }
+}
 /* USER CODE END 4 */
 
 /**
