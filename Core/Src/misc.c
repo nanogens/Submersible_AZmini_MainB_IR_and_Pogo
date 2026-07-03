@@ -750,6 +750,9 @@ void Exit_Recording_Sleep(void)
   // Resume SysTick timer
   HAL_ResumeTick();
 
+  // Wait 1 second for the sensor voltages to stabilize before we perform reading/sampling
+  HAL_Delay(1000);
+
   is_sleeping = false;
 }
 

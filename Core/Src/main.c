@@ -902,8 +902,6 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc)
 {
-    // Wake up 1 second early; delay 1000 ms to let sensors stabilize before sampling
-    HAL_Delay(1000);
     recording_timer_expired = 1;
 }
 /* USER CODE END 4 */
