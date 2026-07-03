@@ -562,6 +562,10 @@ extern UART_HandleTypeDef hlpuart1;
 #endif
 extern uint8_t rx_buffer[];
 extern void SystemClock_Config(void);
+extern RTC_HandleTypeDef hrtc;
+extern SPI_HandleTypeDef hspi1;
+extern I2C_HandleTypeDef hi2c1;
+extern TIM_HandleTypeDef htim2;
 
 void Set_REC_START_Pin_As_Input(void)
 {
@@ -588,6 +592,7 @@ void Enter_Deep_Sleep(void)
   // 1. Configure REC_START pin as EXTI interrupt to wake the CPU
   Set_REC_START_Pin_As_Interrupt();
   __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
+  HAL_NVIC_ClearPendingIRQ(EXTI4_15_IRQn);
   HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
   // 2. Abort UART RX to prevent clock transition errors on wakeup
@@ -597,10 +602,27 @@ void Enter_Deep_Sleep(void)
   HAL_UART_AbortReceive(&hlpuart1);
 #endif
 
-  // 3. Enter Stop Mode
+  // 3. Shut off the load switch to power down sensors and EEPROM
+  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_RESET);
+
+  // 4. Put SPI and I2C pins into Analog No-Pull mode to prevent back-feeding current
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_9 | GPIO_PIN_10;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  // Clear pending EXTI line flags for Reed Switch / Photodiode wakeup lines
+  __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
+  HAL_NVIC_ClearPendingIRQ(EXTI4_15_IRQn);
+
+  // Clear SysTick pending interrupt flag
+  SCB->ICSR = SCB_ICSR_PENDSTCLR_Msk;
+
+  // 5. Enter Stop Mode
   HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
 
-  // 4. On Wakeup: immediately restore clocks and resume
+  // 6. On Wakeup: immediately restore clocks and resume
   Exit_Deep_Sleep();
 }
 
@@ -613,7 +635,15 @@ void Exit_Deep_Sleep(void)
   HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
   Set_REC_START_Pin_As_Input();
 
-  // 3. Clear pending UART errors & flush RX data register, then restart RX
+  // 3. Power up the general load switch immediately on wakeup (powers IrDA transceiver and sensor EEPROM)
+  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
+  last_power_on_time = HAL_GetTick();
+
+  // 4. Re-initialize SPI1 and I2C1 pin mappings
+  HAL_SPI_MspInit(&hspi1);
+  HAL_I2C_MspInit(&hi2c1);
+
+  // 5. Clear pending UART errors & flush RX data register, then restart RX
 #ifdef IR_USART2_SEL
   __HAL_IRDA_CLEAR_FLAG(&hirda2, IRDA_CLEAR_OREF | IRDA_CLEAR_NEF | IRDA_CLEAR_PEF | IRDA_CLEAR_FEF);
   volatile uint32_t temp = USART2->RDR;
@@ -626,14 +656,10 @@ void Exit_Deep_Sleep(void)
   HAL_UART_Receive_IT(&hlpuart1, &rx_buffer[0], 1);
 #endif
 
-  last_activity_time = HAL_GetTick();
   is_sleeping = false;
 }
 
-extern RTC_HandleTypeDef hrtc;
-extern SPI_HandleTypeDef hspi1;
-extern I2C_HandleTypeDef hi2c1;
-extern TIM_HandleTypeDef htim2;
+
 
 uint32_t Get_Sampling_Interval_Seconds(void)
 {
