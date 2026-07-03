@@ -437,6 +437,7 @@ void RecordingStart(void)
     if(recordingabort == 0) // found an empty file slot to record
     {
       RecordState.started = RECORDING_ONGOING;
+      DeterminePageAddress();
 #if DEBUG_SENSOR
       SendString((uint8_t*)"\n\nIn Write_FileSettings, Outcome is RECORDING_ONGOING...\r");
 #endif
