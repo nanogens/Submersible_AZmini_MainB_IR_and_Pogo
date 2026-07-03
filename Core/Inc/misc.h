@@ -29,5 +29,8 @@ void Exit_Deep_Sleep(void);
 void Set_REC_START_Pin_As_Input(void);
 void Set_REC_START_Pin_As_Interrupt(void);
 
-#endif /* INC_MISC_H_ */
+void Enter_Recording_Sleep(uint32_t interval_seconds);
+void Exit_Recording_Sleep(void);
+uint32_t Get_Sampling_Interval_Seconds(void);
 
+#endif /* INC_MISC_H_ */

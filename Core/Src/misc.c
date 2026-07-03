@@ -628,4 +628,72 @@ void Exit_Deep_Sleep(void)
   is_sleeping = false;
 }
 
+extern RTC_HandleTypeDef hrtc;
+extern SPI_HandleTypeDef hspi1;
+extern I2C_HandleTypeDef hi2c1;
+
+uint32_t Get_Sampling_Interval_Seconds(void)
+{
+    switch (Sampling.rate) {
+        case 4:  return 10;
+        case 5:  return 30;
+        case 6:  return 60;
+        case 7:  return 300;
+        case 8:  return 600;
+        case 9:  return 1800;
+        case 10: return 3600;
+        default: return 0; // rates < 10 sec are not eligible for low-power sleep
+    }
+}
+
+void Enter_Recording_Sleep(uint32_t interval_seconds)
+{
+  is_sleeping = true;
+
+  // 1. Configure RTC Wakeup Timer to trigger (interval_seconds - 1) seconds from now
+  HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
+
+  // Clear Wakeup Flag
+  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+  __HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&hrtc, RTC_FLAG_WUTF);
+
+  // The timer count is 0-indexed, so we subtract 1.
+  // We wake up 1 second early, so we configure it for (interval_seconds - 1) - 1.
+  HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, interval_seconds - 2, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+
+  // 2. Shut off the load switch to power down sensors and EEPROM
+  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_RESET);
+
+  // 3. Put SPI and I2C pins into Analog No-Pull mode to prevent back-feeding current
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_9 | GPIO_PIN_10;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  // 4. Enter Stop Mode
+  HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+
+  // 5. On Wakeup: immediately restore clocks and resume
+  Exit_Recording_Sleep();
+}
+
+void Exit_Recording_Sleep(void)
+{
+  // 1. Restore System Clock (HSE/PLL)
+  SystemClock_Config();
+
+  // 2. Disable RTC Wakeup Timer to prevent spurious wakeups
+  HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
+
+  // 3. Power up the general load switch (starts sensor and EEPROM warm-up)
+  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
+
+  // 4. Re-initialize SPI1 and I2C1 pin mappings
+  HAL_SPI_MspInit(&hspi1);
+  HAL_I2C_MspInit(&hi2c1);
+
+  is_sleeping = false;
+}
+
 

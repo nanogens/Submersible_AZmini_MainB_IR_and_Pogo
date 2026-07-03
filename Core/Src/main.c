@@ -289,6 +289,10 @@ int main(void)
   HAL_NVIC_DisableIRQ(EXTI4_15_IRQn); // Disable wakeup EXTI until we explicitly enter Stop Mode
   Set_REC_START_Pin_As_Input();       // Configure REC_START (PB13) pin as standard input pin when awake
 
+  // Enable RTC Wakeup interrupt in NVIC to wake up from Stop Mode
+  HAL_NVIC_SetPriority(RTC_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(RTC_IRQn);
+
   // Now all peripherals are initialized -- safe to enable interrupts
   __enable_irq();
 
@@ -441,6 +445,12 @@ int main(void)
                 else
                 {
                     Counter.repeat++;
+                    uint32_t rec_interval = Get_Sampling_Interval_Seconds();
+                    if (rec_interval >= 10)
+                    {
+                        HAL_TIM_Base_Stop_IT(&htim2);
+                        Enter_Recording_Sleep(rec_interval);
+                    }
                 }
             }
         }
@@ -874,7 +884,12 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc)
+{
+    // Wake up 1 second early; delay 1000 ms to let sensors stabilize before sampling
+    HAL_Delay(1000);
+    recording_timer_expired = 1;
+}
 /* USER CODE END 4 */
 
 /**
