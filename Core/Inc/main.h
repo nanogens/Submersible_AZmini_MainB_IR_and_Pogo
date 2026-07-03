@@ -76,6 +76,7 @@ void Error_Handler(void);
 #define LED_B_GPIO_Port GPIOB
 #define REC_START_Pin GPIO_PIN_13
 #define REC_START_GPIO_Port GPIOB
+#define REC_START_EXTI_IRQn EXTI4_15_IRQn
 
 /* USER CODE BEGIN Private defines */
 
