@@ -286,6 +286,8 @@ int main(void)
   MX_USART2_IRDA_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
+  HAL_NVIC_DisableIRQ(EXTI4_15_IRQn); // Disable wakeup EXTI until we explicitly enter Stop Mode
+  Set_REC_START_Pin_As_Input();       // Configure REC_START (PB13) pin as standard input pin when awake
 
   // Now all peripherals are initialized -- safe to enable interrupts
   __enable_irq();
