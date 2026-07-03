@@ -459,7 +459,7 @@ int main(void)
                 ReedSwitch.state = DEACTIVATED;
                 DebugMemory4(); // Write final records and stop
 
-                RecordState.started = RECORDING_NOTSTARTED;
+                HaltRecording();
                 RecordState.sector = 0;
                 Counter.repeat = 0;
 
