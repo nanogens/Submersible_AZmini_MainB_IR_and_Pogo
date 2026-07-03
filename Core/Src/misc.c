@@ -655,6 +655,11 @@ void Configure_UART_Wakeup(void)
   // Abort any ongoing IrDA receive to prevent state-machine lock
   HAL_IRDA_AbortReceive(&hirda2);
 
+  // Clear any pending overrun, noise, framing, or parity flags on USART2
+  __HAL_IRDA_CLEAR_FLAG(&hirda2, IRDA_CLEAR_OREF | IRDA_CLEAR_NEF | IRDA_CLEAR_PEF | IRDA_CLEAR_FEF);
+  volatile uint32_t temp = USART2->RDR;
+  (void)temp;
+
   // Enable SYSCFG clock (required to map GPIO pins to EXTI lines)
   __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -777,6 +782,16 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   // Clear any pending TIM2 interrupts at both peripheral and NVIC levels
   __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_UPDATE);
   HAL_NVIC_ClearPendingIRQ(TIM2_IRQn);
+
+  // Clear pending EXTI line flags for RX and Reed Switch wakeup lines
+  __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_3);
+  __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
+  HAL_NVIC_ClearPendingIRQ(EXTI2_3_IRQn);
+  HAL_NVIC_ClearPendingIRQ(EXTI4_15_IRQn);
+
+  // Clear any pending UART / LPUART interrupts at the NVIC level
+  HAL_NVIC_ClearPendingIRQ(USART2_IRQn);
+  HAL_NVIC_ClearPendingIRQ(LPUART1_IRQn);
 
   // Clear any pending RTC/EXTI interrupts at both EXTI and NVIC levels
   __HAL_RTC_WAKEUPTIMER_EXTI_CLEAR_FLAG();
