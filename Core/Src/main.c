@@ -406,15 +406,18 @@ int main(void)
     if (recording_timer_expired)
     {
         recording_timer_expired = 0;
+        SendString((uint8_t*)"[DEBUG] Timer expired. Starting sampling...\r\n");
 
         // Try to start a recording if the switch is ON (ReedSwitch.state == ACTIVATED)
         RecordingStart();
 
         if (RecordState.started == RECORDING_ONGOING)
         {
+            SendString((uint8_t*)"[DEBUG] RecordState.started is RECORDING_ONGOING\r\n");
             // Check if we are in Time - Continuous Loop mode and end time is reached
             if (Sampling.mode == TIME_CONTINUOUSLOOP && IsEndTimeReached())
             {
+                SendString((uint8_t*)"[DEBUG] Continuous Loop End reached. Stopping...\r\n");
                 // Execute stop recording sequence
                 ReedSwitch.state = DEACTIVATED;
                 DebugMemory4(); // Write final records and stop
@@ -430,10 +433,12 @@ int main(void)
             }
             else // TIME_DONOTLOOP (or continuous loop mode before end time)
             {
+                SendString((uint8_t*)"[DEBUG] DoNotLoop / normal sample branch.\r\n");
                 DebugMemory4();
 
                 if (RecordState.started == RECORDING_NOTSTARTED)
                 {
+                    SendString((uint8_t*)"[DEBUG] RecordState.started transitioned to NOTSTARTED. Stopping...\r\n");
                     // Stop recording sequence
                     RecordState.sector = 0;
                     Counter.repeat = 0;
@@ -446,13 +451,24 @@ int main(void)
                 {
                     Counter.repeat++;
                     uint32_t rec_interval = Get_Sampling_Interval_Seconds();
+                    char dbg[64];
+                    sprintf(dbg, "[DEBUG] Sampling interval: %lu s\r\n", (unsigned long)rec_interval);
+                    SendString((uint8_t*)dbg);
                     if (rec_interval >= 10)
                     {
+                        SendString((uint8_t*)"[DEBUG] Calling Enter_Recording_Sleep...\r\n");
                         HAL_TIM_Base_Stop_IT(&htim2);
                         Enter_Recording_Sleep(rec_interval);
+                        SendString((uint8_t*)"[DEBUG] Exited Enter_Recording_Sleep!\r\n");
                     }
                 }
             }
+        }
+        else
+        {
+            char dbg[64];
+            sprintf(dbg, "[DEBUG] RecordState.started was NOT ONGOING: %d\r\n", RecordState.started);
+            SendString((uint8_t*)dbg);
         }
     }
 
