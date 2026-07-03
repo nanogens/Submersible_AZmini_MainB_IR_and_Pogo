@@ -87,6 +87,7 @@ volatile uint8_t ignore_echo_usart2;
 
 volatile uint32_t last_activity_time;
 volatile bool is_sleeping = false;
+extern volatile uint32_t last_power_on_time;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -407,14 +408,22 @@ int main(void)
     {
         recording_timer_expired = 0;
 
-        // If sensors were powered down (woke up early for communications),
-        // we must restore power, reconfigure SPI/I2C pins, and warm up sensors for 1 second.
+        // If sensors were powered down, restore power, reconfigure SPI/I2C, and warm up sensors.
+        // If already powered (woke up early), ensure at least 1000 ms has elapsed since power on.
         if (HAL_GPIO_ReadPin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin) == GPIO_PIN_RESET)
         {
             HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
             HAL_SPI_MspInit(&hspi1);
             HAL_I2C_MspInit(&hi2c1);
             HAL_Delay(1000);
+        }
+        else
+        {
+            uint32_t elapsed = HAL_GetTick() - last_power_on_time;
+            if (elapsed < 1000)
+            {
+                HAL_Delay(1000 - elapsed);
+            }
         }
 
 #if DEBUG_SENSOR

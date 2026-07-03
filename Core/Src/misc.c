@@ -552,6 +552,7 @@ uint8_t IsEndTimeReached(void)
   return 0;
 }
 
+volatile uint32_t last_power_on_time = 0;
 extern volatile uint32_t last_activity_time;
 extern volatile bool is_sleeping;
 #ifdef IR_USART2_SEL
@@ -810,18 +811,19 @@ void Exit_Recording_Sleep(void)
   // Resume SysTick timer
   HAL_ResumeTick();
 
+  // Power up the general load switch immediately on wakeup (powers IrDA transceiver and sensor EEPROM)
+  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
+  last_power_on_time = HAL_GetTick();
+
+  // Re-initialize SPI1 and I2C1 pin mappings
+  HAL_SPI_MspInit(&hspi1);
+  HAL_I2C_MspInit(&hi2c1);
+
   // If we woke up due to the RTC timer expiring (the wakeup callback ran and set recording_timer_expired to 1)
   if (recording_timer_expired)
   {
       // 2. Disable RTC Wakeup Timer to prevent spurious wakeups
       HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
-
-      // 3. Power up the general load switch (starts sensor and EEPROM warm-up)
-      HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
-
-      // 4. Re-initialize SPI1 and I2C1 pin mappings
-      HAL_SPI_MspInit(&hspi1);
-      HAL_I2C_MspInit(&hi2c1);
 
       // Wait 1 second for the sensor voltages to stabilize before we perform reading/sampling
       HAL_Delay(1000);
