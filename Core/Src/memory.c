@@ -754,6 +754,12 @@ void FillPage(void)
 
 void HaltRecording(void)
 {
+	// Commit the final active page in RAM to the EEPROM before stopping
+	if (RecordHeader.recordcount > 0)
+	{
+		RecordState.saverecord = RECORDSTATE_WRITEPAGE;
+		CommitPage();
+	}
 	RecordState.started = RECORDING_NOTSTARTED; // Stop recording, we exit the recording in the main loop
 	SendString((uint8_t*)"-=Final page of record written.=-\r\n");
 }
