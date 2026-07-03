@@ -361,7 +361,7 @@ int main(void)
     // Sleep Watchdog
     if (RecordState.started == RECORDING_NOTSTARTED && ApplyRecordingPlan.run == PLAN_RUN_NO)
     {
-        if ((int32_t)(HAL_GetTick() - last_activity_time) > 120000) // 2 minutes (120000 ms)
+        if ((int32_t)(HAL_GetTick() - last_activity_time) > 60000) // 1 minute (60000 ms)
         {
 #if DEBUG_SENSOR
             SendString((uint8_t*)"Inactivity timeout reached. Entering STOP mode...\r\n");
