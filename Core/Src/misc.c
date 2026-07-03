@@ -631,6 +631,7 @@ void Exit_Deep_Sleep(void)
 extern RTC_HandleTypeDef hrtc;
 extern SPI_HandleTypeDef hspi1;
 extern I2C_HandleTypeDef hi2c1;
+extern TIM_HandleTypeDef htim2;
 
 uint32_t Get_Sampling_Interval_Seconds(void)
 {
@@ -649,6 +650,9 @@ uint32_t Get_Sampling_Interval_Seconds(void)
 void Enter_Recording_Sleep(uint32_t interval_seconds)
 {
   is_sleeping = true;
+
+  // Turn off LED_A during sleep to save power and provide status indication
+  HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
 
   // 1. Configure RTC Wakeup Timer to trigger (interval_seconds - 1) seconds from now
   HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
@@ -670,6 +674,14 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  // Clear any pending TIM2 interrupts at both peripheral and NVIC levels
+  __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_UPDATE);
+  HAL_NVIC_ClearPendingIRQ(TIM2_IRQn);
+
+  // Clear any pending RTC/EXTI interrupts at both EXTI and NVIC levels
+  __HAL_RTC_WAKEUPTIMER_EXTI_CLEAR_FLAG();
+  HAL_NVIC_ClearPendingIRQ(RTC_IRQn);
 
   // 4. Enter Stop Mode
   HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
