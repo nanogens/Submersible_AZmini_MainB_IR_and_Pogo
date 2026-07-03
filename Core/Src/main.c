@@ -406,6 +406,17 @@ int main(void)
     if (recording_timer_expired)
     {
         recording_timer_expired = 0;
+
+        // If sensors were powered down (woke up early for communications),
+        // we must restore power, reconfigure SPI/I2C pins, and warm up sensors for 1 second.
+        if (HAL_GPIO_ReadPin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin) == GPIO_PIN_RESET)
+        {
+            HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
+            HAL_SPI_MspInit(&hspi1);
+            HAL_I2C_MspInit(&hi2c1);
+            HAL_Delay(1000);
+        }
+
 #if DEBUG_SENSOR
         SendString((uint8_t*)"[DEBUG] Timer expired. Starting sampling...\r\n");
 #endif

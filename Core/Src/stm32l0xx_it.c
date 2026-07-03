@@ -190,4 +190,12 @@ void RTC_IRQHandler(void)
   HAL_RTCEx_WakeUpTimerIRQHandler(&hrtc);
 }
 
+void EXTI2_3_IRQHandler(void)
+{
+  if (__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_3) != 0x00U)
+  {
+    __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_3);
+  }
+}
+
 /* USER CODE END 1 */

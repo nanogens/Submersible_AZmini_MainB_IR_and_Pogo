@@ -648,6 +648,53 @@ uint32_t Get_Sampling_Interval_Seconds(void)
     }
 }
 
+void Configure_UART_Wakeup(void)
+{
+#ifdef IR_USART2_SEL
+  // Abort any ongoing IrDA receive to prevent state-machine lock
+  HAL_IRDA_AbortReceive(&hirda2);
+
+  // Configure PA3 (USART2_RX) as an EXTI falling-edge interrupt pin
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  // Clear pending EXTI flags and enable the NVIC interrupt vector
+  __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_3);
+  HAL_NVIC_ClearPendingIRQ(EXTI2_3_IRQn);
+  HAL_NVIC_EnableIRQ(EXTI2_3_IRQn);
+#endif
+}
+
+void Restore_UART_After_Wakeup(void)
+{
+#ifdef IR_USART2_SEL
+  // Disable the EXTI vector in NVIC to prevent subsequent noise wakeups
+  HAL_NVIC_DisableIRQ(EXTI2_3_IRQn);
+
+  // Configure PA3 back to Alternate Function (USART2_RX)
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF4_USART2;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  // Clear any overrun, framing error, parity error flags on USART2
+  __HAL_IRDA_CLEAR_FLAG(&hirda2, IRDA_CLEAR_OREF | IRDA_CLEAR_NEF | IRDA_CLEAR_PEF | IRDA_CLEAR_FEF);
+  volatile uint32_t temp = USART2->RDR;
+  (void)temp;
+
+  // Restart the IrDA receive interrupt
+  HAL_IRDA_Receive_IT(&hirda2, &rx_buffer[0], 1);
+#endif
+}
+
+extern volatile uint8_t recording_timer_expired;
+
 void Enter_Recording_Sleep(uint32_t interval_seconds)
 {
   is_sleeping = true;
@@ -693,6 +740,9 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   HAL_Delay(50);
 #endif
 
+  // Configure RX pin as falling edge interrupt to wake CPU on serial traffic
+  Configure_UART_Wakeup();
+
   // Turn off LED_A during sleep to save power and provide status indication
   HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
 
@@ -737,15 +787,8 @@ void Exit_Recording_Sleep(void)
   // 1. Restore System Clock (HSE/PLL)
   SystemClock_Config();
 
-  // 2. Disable RTC Wakeup Timer to prevent spurious wakeups
-  HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
-
-  // 3. Power up the general load switch (starts sensor and EEPROM warm-up)
-  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
-
-  // 4. Re-initialize SPI1 and I2C1 pin mappings
-  HAL_SPI_MspInit(&hspi1);
-  HAL_I2C_MspInit(&hi2c1);
+  // Restore UART RX pin configuration and restart receiver interrupt
+  Restore_UART_After_Wakeup();
 
   // Re-enable IrDA and LPUART interrupts in the NVIC
   HAL_NVIC_EnableIRQ(USART2_IRQn);
@@ -754,10 +797,22 @@ void Exit_Recording_Sleep(void)
   // Resume SysTick timer
   HAL_ResumeTick();
 
-  // Wait 1 second for the sensor voltages to stabilize before we perform reading/sampling
-  HAL_Delay(1000);
+  // If we woke up due to the RTC timer expiring (the wakeup callback ran and set recording_timer_expired to 1)
+  if (recording_timer_expired)
+  {
+      // 2. Disable RTC Wakeup Timer to prevent spurious wakeups
+      HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
+
+      // 3. Power up the general load switch (starts sensor and EEPROM warm-up)
+      HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
+
+      // 4. Re-initialize SPI1 and I2C1 pin mappings
+      HAL_SPI_MspInit(&hspi1);
+      HAL_I2C_MspInit(&hi2c1);
+
+      // Wait 1 second for the sensor voltages to stabilize before we perform reading/sampling
+      HAL_Delay(1000);
+  }
 
   is_sleeping = false;
 }
-
-
