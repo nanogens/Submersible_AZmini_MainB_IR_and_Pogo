@@ -364,15 +364,26 @@ int main(void)
     ProcessMsg();
 
     // Sleep Watchdog
-    if (RecordState.started == RECORDING_NOTSTARTED && ApplyRecordingPlan.run == PLAN_RUN_NO)
+    if (RecordState.started == RECORDING_NOTSTARTED)
     {
         if ((int32_t)(HAL_GetTick() - last_activity_time) > 60000) // 1 minute (60000 ms)
         {
+            if (ApplyRecordingPlan.run == PLAN_RUN_YES)
+            {
 #if DEBUG_SENSOR
-            SendString((uint8_t*)"Inactivity timeout reached. Entering STOP mode...\r\n");
-            HAL_Delay(50); // Let the UART transmission complete
+                SendString((uint8_t*)"[DEBUG] Scheduled plan pending. Entering periodic sleep...\r\n");
+                HAL_Delay(50);
 #endif
-            Enter_Deep_Sleep();
+                Enter_Recording_Sleep(5); // Wake up every 5 seconds to check target time
+            }
+            else
+            {
+#if DEBUG_SENSOR
+                SendString((uint8_t*)"Inactivity timeout reached. Entering STOP mode...\r\n");
+                HAL_Delay(50); // Let the UART transmission complete
+#endif
+                Enter_Deep_Sleep();
+            }
         }
     }
 
