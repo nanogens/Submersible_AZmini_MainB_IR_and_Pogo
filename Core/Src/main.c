@@ -366,7 +366,7 @@ int main(void)
     // Sleep Watchdog
     if (RecordState.started == RECORDING_NOTSTARTED)
     {
-        if ((int32_t)(HAL_GetTick() - last_activity_time) > 30000) // 30 seconds (30000 ms)
+        if ((int32_t)(HAL_GetTick() - last_activity_time) > 10000) // 10 seconds (10000 ms)
         {
             if (ApplyRecordingPlan.run == PLAN_RUN_YES)
             {
