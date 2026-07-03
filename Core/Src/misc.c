@@ -654,6 +654,14 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   // Turn off LED_A during sleep to save power and provide status indication
   HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
 
+  // Suspend the 1 ms SysTick timer to prevent pending tick interrupts from waking CPU
+  HAL_SuspendTick();
+
+  // Disable IrDA, LPUART, and TIM2 interrupts in the NVIC to prevent premature wakeups
+  HAL_NVIC_DisableIRQ(USART2_IRQn);
+  HAL_NVIC_DisableIRQ(LPUART1_IRQn);
+  HAL_NVIC_DisableIRQ(TIM2_IRQn);
+
   // 1. Configure RTC Wakeup Timer to trigger (interval_seconds - 1) seconds from now
   HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
 
@@ -683,6 +691,9 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   __HAL_RTC_WAKEUPTIMER_EXTI_CLEAR_FLAG();
   HAL_NVIC_ClearPendingIRQ(RTC_IRQn);
 
+  // Clear SysTick pending interrupt flag
+  SCB->ICSR = SCB_ICSR_PENDSTCLR_Msk;
+
   // 4. Enter Stop Mode
   HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
 
@@ -704,6 +715,13 @@ void Exit_Recording_Sleep(void)
   // 4. Re-initialize SPI1 and I2C1 pin mappings
   HAL_SPI_MspInit(&hspi1);
   HAL_I2C_MspInit(&hi2c1);
+
+  // Re-enable IrDA and LPUART interrupts in the NVIC
+  HAL_NVIC_EnableIRQ(USART2_IRQn);
+  HAL_NVIC_EnableIRQ(LPUART1_IRQn);
+
+  // Resume SysTick timer
+  HAL_ResumeTick();
 
   is_sleeping = false;
 }
