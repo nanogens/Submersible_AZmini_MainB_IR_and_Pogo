@@ -652,17 +652,6 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
 {
   is_sleeping = true;
 
-  // Turn off LED_A during sleep to save power and provide status indication
-  HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
-
-  // Suspend the 1 ms SysTick timer to prevent pending tick interrupts from waking CPU
-  HAL_SuspendTick();
-
-  // Disable IrDA, LPUART, and TIM2 interrupts in the NVIC to prevent premature wakeups
-  HAL_NVIC_DisableIRQ(USART2_IRQn);
-  HAL_NVIC_DisableIRQ(LPUART1_IRQn);
-  HAL_NVIC_DisableIRQ(TIM2_IRQn);
-
   // 1. Configure RTC Wakeup Timer to trigger (interval_seconds - 1) seconds from now
   HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
 
@@ -683,6 +672,20 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   {
       SendString((uint8_t*)"[DEBUG] SetWakeUpTimer succeeded (HAL_OK)\r\n");
   }
+
+  // Allow the debug messages to finish transmitting
+  HAL_Delay(50);
+
+  // Turn off LED_A during sleep to save power and provide status indication
+  HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
+
+  // Suspend the 1 ms SysTick timer to prevent pending tick interrupts from waking CPU
+  HAL_SuspendTick();
+
+  // Disable IrDA, LPUART, and TIM2 interrupts in the NVIC to prevent premature wakeups
+  HAL_NVIC_DisableIRQ(USART2_IRQn);
+  HAL_NVIC_DisableIRQ(LPUART1_IRQn);
+  HAL_NVIC_DisableIRQ(TIM2_IRQn);
 
   // 2. Shut off the load switch to power down sensors and EEPROM
   HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_RESET);
