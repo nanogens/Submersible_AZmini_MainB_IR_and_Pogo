@@ -353,6 +353,7 @@ int main(void)
   {
     ProcessMsg();
 
+    /*
     // Sleep Watchdog
     if (RecordState.started == RECORDING_NOTSTARTED && ApplyRecordingPlan.run == PLAN_RUN_NO)
     {
@@ -365,6 +366,7 @@ int main(void)
             Enter_Deep_Sleep();
         }
     }
+    */
 
     if (!is_timer_triggered && ApplyRecordingPlan.run == PLAN_RUN_YES)
     {
