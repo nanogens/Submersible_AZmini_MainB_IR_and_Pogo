@@ -1,5 +1,6 @@
 #include "main.h"
 #include <stdbool.h>
+#include <stdio.h>
 #include "misc.h"
 #include "memory.h"
 
@@ -671,7 +672,17 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
 
   // The timer count is 0-indexed, so we subtract 1.
   // We wake up 1 second early, so we configure it for (interval_seconds - 1) - 1.
-  HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, interval_seconds - 2, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+  HAL_StatusTypeDef status = HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, interval_seconds - 2, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+  if (status != HAL_OK)
+  {
+      char err_msg[64];
+      sprintf(err_msg, "[DEBUG] SetWakeUpTimer failed: %d\r\n", status);
+      SendString((uint8_t*)err_msg);
+  }
+  else
+  {
+      SendString((uint8_t*)"[DEBUG] SetWakeUpTimer succeeded (HAL_OK)\r\n");
+  }
 
   // 2. Shut off the load switch to power down sensors and EEPROM
   HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_RESET);
