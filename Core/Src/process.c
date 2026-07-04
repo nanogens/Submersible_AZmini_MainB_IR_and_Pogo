@@ -359,6 +359,7 @@ void Time_StoreData(void)
 
   // Set the new time based on what we received above
   RTC_SetTime();
+  time_is_set = 1;
 }
 
 void Time_Resp(void)
@@ -397,6 +398,7 @@ void Sampling_Set(void)
   Sampling.rate = Lpuart1shadow.payload[3];
   Sampling.reserved1 = Lpuart1shadow.payload[4];
   Sampling.reserved2 = Lpuart1shadow.payload[5];
+  sampling_is_set = 1;
 }
 
 void Activation_Resp(void)
@@ -511,8 +513,8 @@ void Notes_Set(void)
 
 void ApplyRecordingPlan_Status(void)
 {
-  uint8_t time_status = 1;      // 1 = Set (01 binary)
-  uint8_t sampling_status = 1;  // 1 = Set (01 binary)
+  uint8_t time_status = time_is_set ? 1 : 0;
+  uint8_t sampling_status = sampling_is_set ? 1 : 0;
   uint8_t activation_status = (Activation.start_year > 0) ? 1 : 0;
   uint8_t notes_status = (Notes.name[0] != 0 || Notes.location[0] != 0) ? 1 : 0;
 

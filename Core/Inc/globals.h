@@ -174,10 +174,14 @@ struct ApplyRecordingPlan1 {
   uint8_t reserved0;
   uint8_t run;
   uint8_t started;
+  uint8_t status_a;
+  uint8_t status_b;
 };
 extern struct ApplyRecordingPlan1 ApplyRecordingPlan;
 extern volatile uint8_t is_timer_triggered;
 extern volatile uint8_t recording_timer_expired;
+extern uint8_t time_is_set;
+extern uint8_t sampling_is_set;
 
 
 struct Memory1 {
