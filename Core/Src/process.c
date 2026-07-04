@@ -63,6 +63,7 @@ void ProcessMsg(void)
     	        Lpuart1shadow.messageid = 0;
     	        break;
       case APPLYRECORDINGPLAN_QUERY_MSGID:
+    	        ApplyRecordingPlan_Status();
     	        ApplyRecordingPlan_Resp();
 	            Lpuart1shadow.messageid = 0;
 	            break;
@@ -508,15 +509,30 @@ void Notes_Set(void)
   }
 }
 
+void ApplyRecordingPlan_Status(void)
+{
+  uint8_t time_status = 1;      // 1 = Set (01 binary)
+  uint8_t sampling_status = 1;  // 1 = Set (01 binary)
+  uint8_t activation_status = (Activation.start_year > 0) ? 1 : 0;
+  uint8_t notes_status = (Notes.name[0] != 0 || Notes.location[0] != 0) ? 1 : 0;
+
+  ApplyRecordingPlan.status_a = (time_status & 0x03) |
+                                ((sampling_status & 0x03) << 2) |
+                                ((activation_status & 0x03) << 4) |
+                                ((notes_status & 0x03) << 6);
+  ApplyRecordingPlan.status_b = 0; // Reserved for future categories
+}
+
 void ApplyRecordingPlan_Resp(void)
 {
+  ApplyRecordingPlan_Status();
   SendHeader(APPLYRECORDINGPLAN_RESP_MSGLGT, APPLYRECORDINGPLAN_RESP_MSGID);
   SendByte(ApplyRecordingPlan.boxselection);
   SendByte(ApplyRecordingPlan.reserved0);
   SendByte(ApplyRecordingPlan.run);
   SendByte(ApplyRecordingPlan.started);
-  SendByte(0x00);
-  SendByte(0x00);
+  SendByte(ApplyRecordingPlan.status_a);
+  SendByte(ApplyRecordingPlan.status_b);
   SendByte(Lpuart1.crcsend);
 }
 
