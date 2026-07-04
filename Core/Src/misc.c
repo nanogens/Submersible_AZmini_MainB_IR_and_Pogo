@@ -811,8 +811,8 @@ void Exit_Recording_Sleep(void)
       // 2. Disable RTC Wakeup Timer to prevent spurious wakeups
       HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
 
-      // Wait 1 second for the sensor voltages to stabilize before we perform reading/sampling
-      HAL_Delay(1000);
+      // Wait 25 ms for the sensor voltages to stabilize before we perform reading/sampling
+      HAL_Delay(25);
   }
 
   is_sleeping = false;
