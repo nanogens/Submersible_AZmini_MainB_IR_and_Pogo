@@ -325,6 +325,8 @@
 
 #define PLAN_RUN_NO   0
 #define PLAN_RUN_YES  1
+#define PLAN_NOTSTARTED 0
+#define PLAN_STARTED 1
 
 
 // ----------------------------

@@ -172,6 +172,7 @@ struct ApplyRecordingPlan1 {
   uint8_t boxselection;
   uint8_t reserved0;
   uint8_t run;
+  uint8_t started;
 };
 extern struct ApplyRecordingPlan1 ApplyRecordingPlan;
 extern volatile uint8_t is_timer_triggered;

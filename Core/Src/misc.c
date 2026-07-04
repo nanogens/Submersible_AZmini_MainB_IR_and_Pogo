@@ -437,6 +437,7 @@ void RecordingStart(void)
     if(recordingabort == 0) // found an empty file slot to record
     {
       RecordState.started = RECORDING_ONGOING;
+      ApplyRecordingPlan.started = PLAN_STARTED; // so we can indicate to Settings page that the recording session has started (needed for the button)
       DeterminePageAddress();
 #if DEBUG_SENSOR
       SendString((uint8_t*)"\n\nIn Write_FileSettings, Outcome is RECORDING_ONGOING...\r");

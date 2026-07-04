@@ -159,6 +159,7 @@ void Inits_Var(void)
   ApplyRecordingPlan.boxselection = 0;
   ApplyRecordingPlan.reserved0 = 0;
   ApplyRecordingPlan.run = PLAN_RUN_NO;
+  ApplyRecordingPlan.started = PLAN_NOTSTARTED;
 
   Notes.boxselection = 0;
   Notes.reserved0 = 0;

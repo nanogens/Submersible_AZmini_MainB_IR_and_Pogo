@@ -761,6 +761,8 @@ void HaltRecording(void)
 		CommitPage();
 	}
 	RecordState.started = RECORDING_NOTSTARTED; // Stop recording, we exit the recording in the main loop
+	ApplyRecordingPlan.run = PLAN_RUN_NO;
+	ApplyRecordingPlan.started = PLAN_NOTSTARTED;
 #if DEBUG_SENSOR
 	SendString((uint8_t*)"-=Final page of record written.=-\r\n");
 #endif

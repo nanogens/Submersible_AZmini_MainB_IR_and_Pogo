@@ -514,7 +514,7 @@ void ApplyRecordingPlan_Resp(void)
   SendByte(ApplyRecordingPlan.boxselection);
   SendByte(ApplyRecordingPlan.reserved0);
   SendByte(ApplyRecordingPlan.run);
-  SendByte(0x00);
+  SendByte(ApplyRecordingPlan.started);
   SendByte(0x00);
   SendByte(0x00);
   SendByte(Lpuart1.crcsend);
@@ -527,6 +527,11 @@ void ApplyRecordingPlan_Set(void)
   ApplyRecordingPlan.reserved0 = Lpuart1shadow.payload[1];
 
   ApplyRecordingPlan.run = Lpuart1shadow.payload[2];
+
+  if (ApplyRecordingPlan.run == PLAN_RUN_NO)
+  {
+      ApplyRecordingPlan.started = PLAN_NOTSTARTED;
+  }
 
   // If changed to PLAN_RUN_NO while recording is active, abort immediately
   if (ApplyRecordingPlan.run == PLAN_RUN_NO && RecordState.started == RECORDING_ONGOING)
