@@ -27,6 +27,7 @@ void Activation_Set(void);
 void Notes_Resp(void);
 void Notes_Set(void);
 
+void ApplyRecordingPlan_Status(void);
 void ApplyRecordingPlan_Resp(void);
 void ApplyRecordingPlan_Set(void);
 
