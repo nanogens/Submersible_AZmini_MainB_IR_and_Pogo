@@ -404,6 +404,7 @@ int main(void)
 
                 ReedSwitch.state = ACTIVATED;
                 is_timer_triggered = 1;
+                recording_timer_expired = 1;
                 StartRecordingTimer();
             }
             else
@@ -474,6 +475,13 @@ int main(void)
                 SendString((uint8_t*)"[DEBUG] DoNotLoop / normal sample branch.\r\n");
 #endif
                 DebugMemory4();
+
+                // If this is the start of the recording (totalrecordcount = 1 after header write),
+                // immediately take and save the first actual data sample (Record 1) at the scheduled time.
+                if (RecordState.totalrecordcount == 1)
+                {
+                    DebugMemory4();
+                }
 
                 if (RecordState.started == RECORDING_NOTSTARTED)
                 {

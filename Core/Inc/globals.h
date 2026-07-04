@@ -101,6 +101,7 @@ struct Time1 {
   uint8_t read_hour;
   uint8_t read_minute;
   uint8_t read_second;
+  uint8_t read_centisecond;
   uint8_t read_ampm;
   uint16_t read_full_year;
   uint8_t read_weekday;

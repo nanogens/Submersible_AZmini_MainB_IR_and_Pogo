@@ -114,6 +114,9 @@ void RTC_ReadTime(void)
   RTC_TimeTypeDef sTime = {0};
   RTC_DateTypeDef sDate = {0};
 
+  // Wait for RTC shadow registers to synchronize (especially important after wakeup from STOP mode)
+  HAL_RTC_WaitForSynchro(&hrtc);
+
   // Get time and date from RTC
   HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
   HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
@@ -130,6 +133,7 @@ void RTC_ReadTime(void)
   Time.read_hour = hour12;
   Time.read_minute = sTime.Minutes;
   Time.read_second = sTime.Seconds;
+  Time.read_centisecond = (uint8_t)((255 - sTime.SubSeconds) * 25 / 64);
 
   // Date fields
   Time.read_year = sDate.Year;

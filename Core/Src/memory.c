@@ -543,8 +543,8 @@ void FillPage(void)
 	EEPROMRecord.time[3] = Time.read_hour;         // 0-23 (24-hour format)
 	EEPROMRecord.time[4] = Time.read_minute;     // 0-59
 	EEPROMRecord.time[5] = Time.read_second;     // 0-59
-	EEPROMRecord.time[6] = Time.read_ampm;      // 0=AM, 1=PM (optional, since we're using 24-hour)
-	EEPROMRecord.time[7] = Time.read_weekday;   // 1=Monday, 7=Sunday
+	EEPROMRecord.time[6] = Time.read_centisecond; // 0-99 centiseconds
+	EEPROMRecord.time[7] = Time.read_ampm;        // 0=AM, 1=PM (needed for 12-hour clock)
     PageData.pagedata_w[recordoffset + 0] = EEPROMRecord.time[0];
     PageData.pagedata_w[recordoffset + 1] = EEPROMRecord.time[1];
     PageData.pagedata_w[recordoffset + 2] = EEPROMRecord.time[2];
@@ -716,9 +716,7 @@ void FillPage(void)
     if(RecordState.savetime == GREATERTHAN30S)
     {
       // 1. Set update to page flag. Midway update of records
-      RecordState.saverecord = RECORDSTATE_WRITEPAGE; // was RECORDSTATE_UPDATEPAGE;
-                                                                                          // we should be able to use writepage instead of update
-                                                                                          // since we have the entire pagedata_w array in tact
+      RecordState.saverecord = RECORDSTATE_UPDATEPAGE;
   	  CommitPage();
   	  //HAL_GPIO_TogglePin(LED_B_GPIO_Port, LED_B_Pin);
 
@@ -964,28 +962,31 @@ void IncrementPageSector(void)
   // if a record is being committed,
   if ((RecordState.saverecord == RECORDSTATE_WRITEPAGE) || (RecordState.saverecord == RECORDSTATE_UPDATEPAGE))
   {
-    // Read FAT into structure
-	// Temporary - calculates page and sector iterations
-	RecordState.page++; // Increment page count
-	if(RecordState.page >= 8)
-	{
-	  RecordState.page = 0;
-      RecordState.sector++;
+    if (RecordState.saverecord == RECORDSTATE_WRITEPAGE)
+    {
+        // Read FAT into structure
+        // Temporary - calculates page and sector iterations
+        RecordState.page++; // Increment page count
+        if(RecordState.page >= 8)
+        {
+          RecordState.page = 0;
+          RecordState.sector++;
 
-      // Currently set to Round Robin mode.
-      // Default should be to end the recording (fixed length) once the final sector in the file slot is reached.
-      // RecordState.endsector and RecordState.startsector hold the start and end boundaries
-	  if(RecordState.sector >= RecordState.endsector)  // Round Robin, data starts at selected file slot sector
- 	  {
-        if (Sampling.mode == TIME_CONTINUOUSLOOP)
-        {
-          RecordState.sector = RecordState.startsector; // Return to beginning of file slot sector
+          // Currently set to Round Robin mode.
+          // Default should be to end the recording (fixed length) once the final sector in the file slot is reached.
+          // RecordState.endsector and RecordState.startsector hold the start and end boundaries
+          if(RecordState.sector >= RecordState.endsector)  // Round Robin, data starts at selected file slot sector
+          {
+            if (Sampling.mode == TIME_CONTINUOUSLOOP)
+            {
+              RecordState.sector = RecordState.startsector; // Return to beginning of file slot sector
+            }
+            else // TIME_DONOTLOOP (or other modes)
+            {
+              HaltRecording();
+            }
+          }
         }
-        else // TIME_DONOTLOOP (or other modes)
-        {
-          HaltRecording();
-        }
-	  }
     }
 	// 3. Clear commit to page flag.
 	RecordState.saverecord = RECORDSTATE_DONOTHING;
