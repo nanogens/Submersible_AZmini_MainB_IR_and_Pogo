@@ -594,19 +594,22 @@ void Enter_Deep_Sleep(void)
 
 void Exit_Deep_Sleep(void)
 {
-  // 1. Restore System Clock (HSE/PLL)
-  SystemClock_Config();
-
-  // 2. Disable EXTI vector and restore pin to standard digital input
-  HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
-  Set_REC_START_Pin_As_Input();
-
-  // 3. Power up the general load switch immediately on wakeup (powers IrDA transceiver and sensor EEPROM)
+  // 1. Power up the general load switch immediately on wakeup (powers clock oscillator, IrDA transceiver, and sensor EEPROM)
   HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
   last_power_on_time = HAL_GetTick();
 
-  // Wait 25 ms for the sensor/transceiver voltages to stabilize before we perform reading/sampling/comm
-  HAL_Delay(25);
+  // Wait 5 ms for the clock oscillator to start up and stabilize before we select it as System Clock
+  HAL_Delay(5);
+
+  // 2. Restore System Clock (HSE/PLL)
+  SystemClock_Config();
+
+  // 3. Disable EXTI vector and restore pin to standard digital input
+  HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
+  Set_REC_START_Pin_As_Input();
+
+  // Wait 20 ms more (25 ms total) for the sensors and transceiver voltages to fully stabilize
+  HAL_Delay(20);
 
   // 4. Re-initialize SPI1 and I2C1 pin mappings
   HAL_SPI_MspInit(&hspi1);
@@ -747,7 +750,17 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
 
 void Exit_Recording_Sleep(void)
 {
-  // 1. Restore System Clock (HSE/PLL)
+  // 1. Resume SysTick timer first so that HAL_Delay() works
+  HAL_ResumeTick();
+
+  // 2. Power up the general load switch immediately on wakeup (powers clock oscillator, IrDA transceiver, and sensor EEPROM)
+  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
+  last_power_on_time = HAL_GetTick();
+
+  // Wait 5 ms for the clock oscillator to start up and stabilize
+  HAL_Delay(5);
+
+  // 3. Restore System Clock (HSE/PLL)
   SystemClock_Config();
 
   // Clear pending UART flags and restart receiver interrupts
@@ -771,13 +784,6 @@ void Exit_Recording_Sleep(void)
   HAL_NVIC_EnableIRQ(USART2_IRQn);
   HAL_NVIC_EnableIRQ(LPUART1_IRQn);
 
-  // Resume SysTick timer
-  HAL_ResumeTick();
-
-  // Power up the general load switch immediately on wakeup (powers IrDA transceiver and sensor EEPROM)
-  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
-  last_power_on_time = HAL_GetTick();
-
   // Re-initialize SPI1 and I2C1 pin mappings
   HAL_SPI_MspInit(&hspi1);
   HAL_I2C_MspInit(&hi2c1);
@@ -788,8 +794,8 @@ void Exit_Recording_Sleep(void)
       // 2. Disable RTC Wakeup Timer to prevent spurious wakeups
       HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
 
-      // Wait 25 ms for the sensor voltages to stabilize before we perform reading/sampling
-      HAL_Delay(25);
+      // Wait 20 ms more (25 ms total) for the sensor voltages to fully stabilize before sampling
+      HAL_Delay(20);
   }
 
   is_sleeping = false;
