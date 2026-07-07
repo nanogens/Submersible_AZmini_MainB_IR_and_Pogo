@@ -251,148 +251,93 @@ uint8_t Write_FileSettings(void)
   uint8_t testbyte[9] = {0};  // Need 9 bytes for 8 hex digits + null terminator
   uint32_t rec[1] = {0};
 
-  // Find first available empty slot in the 4 file slots
-  for(uint8_t i=0; i < READSPECIFICFILE_FILESLOTS; i++) // careful not to use Counter.y0 because its used below
-  {
+  uint8_t i = 0; // Always target File Slot 0
 
+  // Set where the starting sector to which data is to be written based on file slot 0 (in sector 2)
+  RecordState.sector = 3 + ((TOTAL_SECTORS / READSPECIFICFILE_FILESLOTS) * i);  // Calculation needed to offset to correct data sector to which to write
+  RecordState.page = 0;
 
-#if DEBUG_SENSOR
-  	SendString((uint8_t*)"\n\nIn File Slot Finder For Loop...\r");
-#endif
+  RecordState.fileslot = i;
+  RecordState.startsector = RecordState.sector;
+  RecordState.endsector = RecordState.sector + (TOTAL_SECTORS / READSPECIFICFILE_FILESLOTS);
 
-    uint32_t test_address = (BYTES_PER_SECTOR * READSPECIFICFILE_SECTOR) + (PAGEDATA_R_ARRAY * i); // careful not to use Counter.y0 because its used below
-    // Clear the array that is to hold the pagedata values to be read first
-#if DEBUG_SENSOR
-  	SendString((uint8_t*)"\n\nClearing pagedata_r array to 0...\r");
-#endif
-    for(uint16_t j = 0; j < PAGEDATA_R_ARRAY; j++)
-    {
-	  PageData.pagedata_r[j] = 0;
-    }
+  // Clear the write array
+  Clear_PagedataWrite_Array(); // sets pagedata_w to 0xFF
 
-#if DEBUG_SENSOR
-  	SendString((uint8_t*)"\n\nReading Sector 2, Page X...\r");
-#endif
-    Mem_ReadData(test_address, PageData.pagedata_r, PAGEDATA_R_ARRAY);
+  // 1. Write status
+  PageData.pagedata_w[0] = FILE_SLOT_OCCUPIED;  // shows its now occupied
 
-    // Debugging
-#if DEBUG_SENSOR
-    SendString((uint8_t*)"Value at [0]: ");
-    ByteToHex(PageData.pagedata_r[0], testbyte);
-    SendString(testbyte);
-#endif
-
-    if(PageData.pagedata_r[0] == FILE_SLOT_OCCUPIED)
-    {
-      // Page has a record!
-#if DEBUG_SENSOR
-      SendString((uint8_t*)"\nPage is Occupied DLE...\n");
-#endif
-    }
-    else if(PageData.pagedata_r[0] == FILE_SLOT_EMPTY)
-    {
-      // Page is free!
-      // Set where the starting sector to which data is to be written based on the free file slot we have found (in sector 2)
-      // Calculate sector and page based on file index and page number
-      // For file 0: sectors 3 – 258 (256 sectors total)
-      // For file 1: sectors 259 – 514 (256 sectors)
-      // For file 2: sectors 515 – 770 (256 sectors)
-      // For file 3: sectors 771 – 1023 (256 sectors)
-      RecordState.sector = 3 + ((TOTAL_SECTORS / READSPECIFICFILE_FILESLOTS) * i);  // Calculation needed to offset to correct data sector to which to write
-      RecordState.page = 0;
-
-      RecordState.fileslot = i;
-      RecordState.startsector = RecordState.sector;
-      RecordState.endsector = RecordState.sector + (TOTAL_SECTORS / READSPECIFICFILE_FILESLOTS);
-
-#if DEBUG_SENSOR
-      SendString((uint8_t*)"\n\nPage is Empty 0xFF...\r");
-#endif
-      // 1. check structure to see all settings are there (should be done before we even enter this function!)
-    	  // abort if not
-      // 2. write occupied flag and settings to sector 2, (page number = file number)
-    	 // Clear the array that is to hold the pagedata values to be read first
-      Clear_PagedataWrite_Array(); // sets pagedata_w to 0xFF (not 0x00)
-      PageData.pagedata_w[0] = FILE_SLOT_OCCUPIED;  // shows its now occupied
-      PageData.pagedata_w[1] = Sampling.mode;
-      PageData.pagedata_w[2] = Sampling.rate;
-      
-      PageData.pagedata_w[3] = Activation.start_year;
-      PageData.pagedata_w[4] = Activation.start_month;
-      PageData.pagedata_w[5] = Activation.start_day;
-      PageData.pagedata_w[6] = Activation.start_hour;
-      PageData.pagedata_w[7] = Activation.start_minute;
-      PageData.pagedata_w[8] = Activation.start_second;
-      PageData.pagedata_w[9] = Activation.start_ampm;
-      
-      PageData.pagedata_w[10] = Activation.end_year;
-      PageData.pagedata_w[11] = Activation.end_month;
-      PageData.pagedata_w[12] = Activation.end_day;
-      PageData.pagedata_w[13] = Activation.end_hour;
-      PageData.pagedata_w[14] = Activation.end_minute;
-      PageData.pagedata_w[15] = Activation.end_second;
-      PageData.pagedata_w[16] = Activation.end_ampm;
-      
-      PageData.pagedata_w[17] = Activation.eventtrigger;
-      PageData.pagedata_w[18] = Activation.eventthreshold;
-      
-      for (uint8_t x = 0; x < MAX_NOTES_NAME_ARRAY; x++) {
-          PageData.pagedata_w[19 + x] = Notes.name[x];
-      }
-      for (uint8_t y = 0; y < MAX_NOTES_LOCATION_ARRAY; y++) {
-          PageData.pagedata_w[43 + y] = Notes.location[y];
-      }
-      for (uint8_t z = 0; z < MAX_NOTES_NOTE_ARRAY; z++) {
-          PageData.pagedata_w[67 + z] = Notes.note[z];
-      }
-
-      // Write the meta data to the sector & page specified
-      test_address = (BYTES_PER_SECTOR * READSPECIFICFILE_SECTOR) + (PAGEDATA_W_ARRAY * i);
-      Mem_WriteData(test_address, PageData.pagedata_w, PAGEDATA_W_ARRAY);
-
-      // Test printout -- temporary
-#if DEBUG_SENSOR
-      SendString((uint8_t*)"\n\nWF_RecordState.sector: \r");
-      rec[0] = READSPECIFICFILE_SECTOR; // note: its 32 bits, while rec[0] only holds uint8_t
-      ByteToHex(rec[0], testbyte);
-      SendString(testbyte);
-
-      SendString((uint8_t*)"\nWF_RecordState.page: \r");
-      rec[0] = i;  // Note: In this case its Counter.y1, not Counter.y0.  Watch out if you copy & paste it elsewhere!
-      ByteToHex(rec[0], testbyte);
-      SendString(testbyte);
-
-      SendString((uint8_t*)"\n");
-#endif
-
-      // Print out the page
-      PrintOutRecord(READSPECIFICFILE_SECTOR, i);
-
-#if DEBUG_SENSOR
-      SendString((uint8_t*)"\n\nCC_RecordState.sector: \r");
-      rec[0] = RecordState.sector;
-      Uint32ToHexString(rec[0], (uint8_t*)testbyte);
-      SendString((uint8_t*)testbyte);
-      SendString((uint8_t*)"\r\n");
-
-      SendString((uint8_t*)"\n\nCC_RecordState.page: \r");
-      rec[0] = RecordState.page; // note: its 32 bits, while rec[0] only holds uint8_t
-      ByteToHex(rec[0], testbyte);
-      SendString(testbyte);
-#endif
-
-      return 0;
-    }
-    else // some unexpected value
-    {
-      // Something is wrong - abort (no recording)
-#if DEBUG_SENSOR
-      SendString((uint8_t*)"\nUnrecognized file slot occupancy indicator detected!  Abort.\n");
-#endif
-      return 2;
-    }
+  // 2. Write Sampling configurations
+  PageData.pagedata_w[1] = Sampling.mode;
+  PageData.pagedata_w[2] = Sampling.rate;
+  
+  // 3. Write Activation configurations (Time & Event triggers)
+  PageData.pagedata_w[3] = Activation.start_year;
+  PageData.pagedata_w[4] = Activation.start_month;
+  PageData.pagedata_w[5] = Activation.start_day;
+  PageData.pagedata_w[6] = Activation.start_hour;
+  PageData.pagedata_w[7] = Activation.start_minute;
+  PageData.pagedata_w[8] = Activation.start_second;
+  PageData.pagedata_w[9] = Activation.start_ampm;
+  
+  PageData.pagedata_w[10] = Activation.end_year;
+  PageData.pagedata_w[11] = Activation.end_month;
+  PageData.pagedata_w[12] = Activation.end_day;
+  PageData.pagedata_w[13] = Activation.end_hour;
+  PageData.pagedata_w[14] = Activation.end_minute;
+  PageData.pagedata_w[15] = Activation.end_second;
+  PageData.pagedata_w[16] = Activation.end_ampm;
+  
+  PageData.pagedata_w[17] = Activation.eventtrigger;
+  PageData.pagedata_w[18] = Activation.eventthreshold;
+  
+  // 4. Write Notes arrays (Char buffers)
+  for (uint8_t x = 0; x < MAX_NOTES_NAME_ARRAY; x++) {
+      PageData.pagedata_w[19 + x] = Notes.name[x];
   }
-  return 1;  // all file slots occupied, recording not possible
+  for (uint8_t y = 0; y < MAX_NOTES_LOCATION_ARRAY; y++) {
+      PageData.pagedata_w[43 + y] = Notes.location[y];
+  }
+  for (uint8_t z = 0; z < MAX_NOTES_NOTE_ARRAY; z++) {
+      PageData.pagedata_w[67 + z] = Notes.note[z];
+  }
+
+  // Write the meta data to the sector & page specified (auto-erase is done internally by Mem_WriteData)
+  uint32_t test_address = (BYTES_PER_SECTOR * READSPECIFICFILE_SECTOR) + (PAGEDATA_W_ARRAY * i);
+  Mem_WriteData(test_address, PageData.pagedata_w, PAGEDATA_W_ARRAY);
+
+  // Test printout -- temporary
+#if DEBUG_SENSOR
+  SendString((uint8_t*)"\n\nWF_RecordState.sector: \r");
+  rec[0] = READSPECIFICFILE_SECTOR;
+  ByteToHex(rec[0], testbyte);
+  SendString(testbyte);
+
+  SendString((uint8_t*)"\nWF_RecordState.page: \r");
+  rec[0] = i;
+  ByteToHex(rec[0], testbyte);
+  SendString(testbyte);
+
+  SendString((uint8_t*)"\n");
+#endif
+
+  // Print out the page
+  PrintOutRecord(READSPECIFICFILE_SECTOR, i);
+
+#if DEBUG_SENSOR
+  SendString((uint8_t*)"\n\nCC_RecordState.sector: \r");
+  rec[0] = RecordState.sector;
+  Uint32ToHexString(rec[0], (uint8_t*)testbyte);
+  SendString((uint8_t*)testbyte);
+  SendString((uint8_t*)"\r\n");
+
+  SendString((uint8_t*)"\n\nCC_RecordState.page: \r");
+  rec[0] = RecordState.page;
+  ByteToHex(rec[0], testbyte);
+  SendString(testbyte);
+#endif
+
+  return 0;
 }
 
 // This is for resetting the RecordState data type
