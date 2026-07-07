@@ -605,6 +605,9 @@ void Exit_Deep_Sleep(void)
   HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
   last_power_on_time = HAL_GetTick();
 
+  // Wait 25 ms for the sensor/transceiver voltages to stabilize before we perform reading/sampling/comm
+  HAL_Delay(25);
+
   // 4. Re-initialize SPI1 and I2C1 pin mappings
   HAL_SPI_MspInit(&hspi1);
   HAL_I2C_MspInit(&hi2c1);
@@ -621,6 +624,9 @@ void Exit_Deep_Sleep(void)
   (void)temp;
   HAL_UART_Receive_IT(&hlpuart1, &rx_buffer[0], 1);
 #endif
+
+  // Reset inactivity watchdog timer so the CPU has 10 seconds to communicate before sleeping again
+  last_activity_time = HAL_GetTick();
 
   is_sleeping = false;
 }
