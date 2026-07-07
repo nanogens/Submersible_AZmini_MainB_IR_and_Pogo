@@ -195,10 +195,23 @@
 // Enable Interface Board implementation (comment out to disable)
 //#define INTERFACE_BOARD_IMPLEMENTATION
 
-// SamplingMode
+// Sampling Mode
 #define TIME_CONTINUOUSLOOP 0
 #define TIME_DONOTLOOP 1
 #define EVENT_TRIGGERED 2
+
+// Sampling Rate
+#define SAMPLING_RATE_100MS 0
+#define SAMPLING_RATE_500MS 1
+#define SAMPLING_RATE_1S    2
+#define SAMPLING_RATE_5S    3
+#define SAMPLING_RATE_10S   4
+#define SAMPLING_RATE_30S   5
+#define SAMPLING_RATE_1M    6
+#define SAMPLING_RATE_5M    7
+#define SAMPLING_RATE_10M   8
+#define SAMPLING_RATE_30M   9
+#define SAMPLING_RATE_1H    10
 
 // ActivateRecordingPlan
 #define RUN_PLAN_NO 0

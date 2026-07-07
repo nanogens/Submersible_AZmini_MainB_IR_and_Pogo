@@ -122,7 +122,8 @@ void Inits_Var(void)
   Sampling.boxselection = 0;
   Sampling.reserved0 = 0;
   Sampling.mode = 0; // 0 = Time - Continuous, 1 = Time - Do not Loop, 2 = Event Triggered
-  Sampling.rate = 0;    // 0 = 0.1 sec, 1 = 0.5 sec, 2 = 1 sec, 3 = 5 sec, 4 = 10 sec, 5 = 30 sec, 6 = 1 min, 7 = 5 min, 8 = 10 min, 9 = 30 min, 10 = 1 hour
+  // Note: Default sampling rate on startup set to 1 minute
+  Sampling.rate = SAMPLING_RATE_1M;    // 0 = 0.1 sec, 1 = 0.5 sec, 2 = 1 sec, 3 = 5 sec, 4 = 10 sec, 5 = 30 sec, 6 = 1 min, 7 = 5 min, 8 = 10 min, 9 = 30 min, 10 = 1 hour
   Sampling.reserved1 = 0;
   Sampling.reserved2 = 0;
 

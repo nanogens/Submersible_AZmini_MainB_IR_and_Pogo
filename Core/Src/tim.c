@@ -91,18 +91,18 @@ void StartRecordingTimer(void)
     TimeUnit_t unit = TIME_UNIT_SEC;
 
     switch (Sampling.rate) {
-        case 0:  interval = 100; unit = TIME_UNIT_MS;   break; // 0.1 sec
-        case 1:  interval = 500; unit = TIME_UNIT_MS;   break; // 0.5 sec
-        case 2:  interval = 1;   unit = TIME_UNIT_SEC;  break; // 1 sec
-        case 3:  interval = 5;   unit = TIME_UNIT_SEC;  break; // 5 sec
-        case 4:  interval = 10;  unit = TIME_UNIT_SEC;  break; // 10 sec
-        case 5:  interval = 30;  unit = TIME_UNIT_SEC;  break; // 30 sec
-        case 6:  interval = 1;   unit = TIME_UNIT_MIN;  break; // 1 min
-        case 7:  interval = 5;   unit = TIME_UNIT_MIN;  break; // 5 min
-        case 8:  interval = 10;  unit = TIME_UNIT_MIN;  break; // 10 min
-        case 9:  interval = 30;  unit = TIME_UNIT_MIN;  break; // 30 min
-        case 10: interval = 1;   unit = TIME_UNIT_HOUR; break; // 1 hour
-        default: interval = 1;   unit = TIME_UNIT_SEC;  break;
+        case SAMPLING_RATE_100MS: interval = 100; unit = TIME_UNIT_MS;   break; // 0.1 sec
+        case SAMPLING_RATE_500MS: interval = 500; unit = TIME_UNIT_MS;   break; // 0.5 sec
+        case SAMPLING_RATE_1S:    interval = 1;   unit = TIME_UNIT_SEC;  break; // 1 sec
+        case SAMPLING_RATE_5S:    interval = 5;   unit = TIME_UNIT_SEC;  break; // 5 sec
+        case SAMPLING_RATE_10S:   interval = 10;  unit = TIME_UNIT_SEC;  break; // 10 sec
+        case SAMPLING_RATE_30S:   interval = 30;  unit = TIME_UNIT_SEC;  break; // 30 sec
+        case SAMPLING_RATE_1M:    interval = 1;   unit = TIME_UNIT_MIN;  break; // 1 min
+        case SAMPLING_RATE_5M:    interval = 5;   unit = TIME_UNIT_MIN;  break; // 5 min
+        case SAMPLING_RATE_10M:   interval = 10;  unit = TIME_UNIT_MIN;  break; // 10 min
+        case SAMPLING_RATE_30M:   interval = 30;  unit = TIME_UNIT_MIN;  break; // 30 min
+        case SAMPLING_RATE_1H:    interval = 1;   unit = TIME_UNIT_HOUR; break; // 1 hour
+        default:                  interval = 1;   unit = TIME_UNIT_SEC;  break;
     }
 
     Set_TIM2_Interval(interval, unit);

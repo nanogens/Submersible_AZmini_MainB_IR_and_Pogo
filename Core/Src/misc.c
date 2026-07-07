@@ -367,7 +367,7 @@ void RecordingStart(void)
     // RecordState.started = RECORDING_STARTED will be allocated externally, on command from Viewer or Ring Switch
     RecordState.saverecord = RECORDSTATE_DONOTHING; // tells memory FILLPAGE routine what to do (WRITEPAGE, UPDATEPAGE) while recording.
     RecordState.pageaddress = 0;
-    if (Sampling.rate <= 4)
+    if (Sampling.rate <= SAMPLING_RATE_10S)
     {
       RecordState.savetime = LESSTHAN30S;
     }
@@ -636,15 +636,16 @@ void Exit_Deep_Sleep(void)
 
 uint32_t Get_Sampling_Interval_Seconds(void)
 {
-    switch (Sampling.rate) {
-        case 4:  return 10;
-        case 5:  return 30;
-        case 6:  return 60;
-        case 7:  return 300;
-        case 8:  return 600;
-        case 9:  return 1800;
-        case 10: return 3600;
-        default: return 0; // rates < 10 sec are not eligible for low-power sleep
+    switch (Sampling.rate)
+    {
+        case SAMPLING_RATE_10S:   return 10;
+        case SAMPLING_RATE_30S:   return 30;
+        case SAMPLING_RATE_1M:   return 60;
+        case SAMPLING_RATE_5M:   return 300;
+        case SAMPLING_RATE_10M: return 600;
+        case SAMPLING_RATE_30M: return 1800;
+        case SAMPLING_RATE_1H:    return 3600;
+        default:                                return 0; // Note : Rates < 10 sec are not eligible for low-power sleep
     }
 }
 
