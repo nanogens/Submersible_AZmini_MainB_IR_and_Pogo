@@ -798,5 +798,8 @@ void Exit_Recording_Sleep(void)
       HAL_Delay(20);
   }
 
+  // Reset inactivity watchdog timer so the CPU has 10 seconds to communicate before sleeping again
+  last_activity_time = HAL_GetTick();
+
   is_sleeping = false;
 }
