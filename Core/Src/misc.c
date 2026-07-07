@@ -780,9 +780,10 @@ void Exit_Recording_Sleep(void)
   HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
   Set_REC_START_Pin_As_Input();
 
-  // Re-enable IrDA and LPUART interrupts in the NVIC
+  // Re-enable IrDA, LPUART, and TIM2 interrupts in the NVIC
   HAL_NVIC_EnableIRQ(USART2_IRQn);
   HAL_NVIC_EnableIRQ(LPUART1_IRQn);
+  HAL_NVIC_EnableIRQ(TIM2_IRQn);
 
   // Re-initialize SPI1 and I2C1 pin mappings
   HAL_SPI_MspInit(&hspi1);
