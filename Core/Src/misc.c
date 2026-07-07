@@ -608,14 +608,7 @@ void Exit_Deep_Sleep(void)
   HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
   Set_REC_START_Pin_As_Input();
 
-  // Wait 20 ms more (25 ms total) for the sensors and transceiver voltages to fully stabilize
-  HAL_Delay(20);
-
-  // 4. Re-initialize SPI1 and I2C1 pin mappings
-  HAL_SPI_MspInit(&hspi1);
-  HAL_I2C_MspInit(&hi2c1);
-
-  // 5. Clear pending UART errors & flush RX data register, then restart RX
+  // 4. Start UART/LPUART receiver immediately so we don't miss any incoming bytes!
 #ifdef IR_USART2_SEL
   __HAL_IRDA_CLEAR_FLAG(&hirda2, IRDA_CLEAR_OREF | IRDA_CLEAR_NEF | IRDA_CLEAR_PEF | IRDA_CLEAR_FEF);
   volatile uint32_t temp = USART2->RDR;
@@ -627,6 +620,13 @@ void Exit_Deep_Sleep(void)
   (void)temp;
   HAL_UART_Receive_IT(&hlpuart1, &rx_buffer[0], 1);
 #endif
+
+  // Wait 20 ms more (25 ms total) for the sensors and transceiver voltages to fully stabilize
+  HAL_Delay(20);
+
+  // 5. Re-initialize SPI1 and I2C1 pin mappings
+  HAL_SPI_MspInit(&hspi1);
+  HAL_I2C_MspInit(&hi2c1);
 
   // Reset inactivity watchdog timer so the CPU has 10 seconds to communicate before sleeping again
   last_activity_time = HAL_GetTick();
