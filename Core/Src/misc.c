@@ -553,7 +553,7 @@ void Set_REC_START_Pin_As_Interrupt(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   GPIO_InitStruct.Pin = REC_START_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(REC_START_GPIO_Port, &GPIO_InitStruct);
 }
