@@ -534,85 +534,12 @@ void FillPage(void)
   // ToDo: Insert the error into an errorcode variable stored in Page 0, Record 0 (bytes X to XX) of a given recording
   uint8_t error = Acquire_RawPressureReading();  // Fetch raw digital pressure (D1) and raw digital temperature data (D2) from sensor
 
-  if(RecordHeader.recordcount != 0) // on every record that is not the first
-  {
-	// Time (8 bytes)
-	EEPROMRecord.time[0] = Time.read_year;          // 0-99 (00-99)
-	EEPROMRecord.time[1] = Time.read_month;      // 1-12
-	EEPROMRecord.time[2] = Time.read_day;           // 1-31
-	EEPROMRecord.time[3] = Time.read_hour;         // 0-23 (24-hour format)
-	EEPROMRecord.time[4] = Time.read_minute;     // 0-59
-	EEPROMRecord.time[5] = Time.read_second;     // 0-59
-	EEPROMRecord.time[6] = Time.read_centisecond; // 0-99 centiseconds
-	EEPROMRecord.time[7] = Time.read_ampm;        // 0=AM, 1=PM (needed for 12-hour clock)
-    PageData.pagedata_w[recordoffset + 0] = EEPROMRecord.time[0];
-    PageData.pagedata_w[recordoffset + 1] = EEPROMRecord.time[1];
-    PageData.pagedata_w[recordoffset + 2] = EEPROMRecord.time[2];
-    PageData.pagedata_w[recordoffset + 3] = EEPROMRecord.time[3];
-    PageData.pagedata_w[recordoffset + 4] = EEPROMRecord.time[4];
-    PageData.pagedata_w[recordoffset + 5] = EEPROMRecord.time[5];
-    PageData.pagedata_w[recordoffset + 6] = EEPROMRecord.time[6];
-    PageData.pagedata_w[recordoffset + 7] = EEPROMRecord.time[7];
 
-    // Pressure (6 bytes) - raw value, conversion on software side.
-    EEPROMRecord.pressure[0] = (D1 >> 24) & 0xFF;
-    EEPROMRecord.pressure[1] = (D1 >> 16) & 0xFF;
-    EEPROMRecord.pressure[2] = (D1 >> 8) & 0xFF;
-    EEPROMRecord.pressure[3] = (D1) & 0xFF;
-    EEPROMRecord.pressure[4] = 0;
-    EEPROMRecord.pressure[5] = 0;
-    PageData.pagedata_w[recordoffset + 8] = EEPROMRecord.pressure[0];
-    PageData.pagedata_w[recordoffset + 9] = EEPROMRecord.pressure[1];
-    PageData.pagedata_w[recordoffset + 10] = EEPROMRecord.pressure[2];
-    PageData.pagedata_w[recordoffset + 11] = EEPROMRecord.pressure[3];
-    PageData.pagedata_w[recordoffset + 12] = EEPROMRecord.pressure[4];
-    PageData.pagedata_w[recordoffset + 13] = EEPROMRecord.pressure[5];
-    // Temperature  (6 bytes)  - raw value, conversion on software side.
-    EEPROMRecord.temperature[0] = (D2 >> 24) & 0xFF;
-    EEPROMRecord.temperature[1] = (D2 >> 16) & 0xFF;
-    EEPROMRecord.temperature[2] = (D2 >> 8) & 0xFF;
-    EEPROMRecord.temperature[3] = (D2) & 0xFF;
-    EEPROMRecord.temperature[4] = 0;
-    EEPROMRecord.temperature[5] = 0;
-    PageData.pagedata_w[recordoffset + 14] = EEPROMRecord.temperature[0];
-    PageData.pagedata_w[recordoffset + 15] = EEPROMRecord.temperature[1];
-    PageData.pagedata_w[recordoffset + 16] = EEPROMRecord.temperature[2];
-    PageData.pagedata_w[recordoffset + 17] = EEPROMRecord.temperature[3];
-    PageData.pagedata_w[recordoffset + 18] = EEPROMRecord.temperature[4];
-    PageData.pagedata_w[recordoffset + 19] = EEPROMRecord.temperature[5];
-    // Conductivity  (6 bytes) -- replace what's below with what needs to be replaced later
-    EEPROMRecord.conductivity[0] = (Sensor.conductivity >> 24) & 0xFF;
-    EEPROMRecord.conductivity[1] = (Sensor.conductivity >> 16) & 0xFF;
-    EEPROMRecord.conductivity[2] = (Sensor.conductivity >> 8) & 0xFF;
-    EEPROMRecord.conductivity[3] = (Sensor.conductivity) & 0xFF;
-    EEPROMRecord.conductivity[4] = 0;
-    EEPROMRecord.conductivity[5] = 0;
-    PageData.pagedata_w[recordoffset + 20] = EEPROMRecord.conductivity[0];
-    PageData.pagedata_w[recordoffset + 21] = EEPROMRecord.conductivity[1];
-    PageData.pagedata_w[recordoffset + 22] = EEPROMRecord.conductivity[2];
-    PageData.pagedata_w[recordoffset + 23] = EEPROMRecord.conductivity[3];
-    PageData.pagedata_w[recordoffset + 24] = EEPROMRecord.conductivity[4];
-    PageData.pagedata_w[recordoffset + 25] = EEPROMRecord.conductivity[5];
-    // Reserved  (6 bytes)
-    EEPROMRecord.reserved[0] = (Sensor.reserved >> 24) & 0xFF;
-    EEPROMRecord.reserved[1] = (Sensor.reserved >> 16) & 0xFF;
-    EEPROMRecord.reserved[2] = (Sensor.reserved >> 8) & 0xFF;
-    EEPROMRecord.reserved[3] = (Sensor.reserved) & 0xFF;
-    EEPROMRecord.reserved[4] = 0;
-    EEPROMRecord.reserved[5] = 0;
-    PageData.pagedata_w[recordoffset + 26] = EEPROMRecord.reserved[0];
-    PageData.pagedata_w[recordoffset + 27] = EEPROMRecord.reserved[1];
-    PageData.pagedata_w[recordoffset + 28] = EEPROMRecord.reserved[2];
-    PageData.pagedata_w[recordoffset + 29] = EEPROMRecord.reserved[3];
-    PageData.pagedata_w[recordoffset + 30] = EEPROMRecord.reserved[4];
-    PageData.pagedata_w[recordoffset + 31] = EEPROMRecord.reserved[5];
+  // ------------------------------------------------------------------------------------------------------------------
 
-    //HAL_GPIO_TogglePin(LED_A_GPIO_Port, LED_A_Pin);
-
-    // Debug printouts to Terminal program.  DISABLE when using.
-    SendString((uint8_t*)" One Record Accumulated in PWB!\r\n");
-  }
-  else // Record Header (in the position of the first record of every page)
+  // This is to save the header of each page.  It is the first "record" of each page.
+  // 8 pages = 1 sector
+  if(RecordHeader.recordcount == 0) // Record Header (in the position of the first record of every page)
   {
 	// Clear the array that is to hold the pagedata_w values to be written first
 	Clear_PagedataWrite_Array();
@@ -650,10 +577,110 @@ void FillPage(void)
 	    }
 	}
 
+	// Increment the count of records in the page
+	RecordHeader.recordcount = RecordHeader.recordcount + 1;
+	// update the number of records being written to the Page header (i.e. record position 0)
+	PageData.pagedata_w[5] = RecordHeader.recordcount;   // Update the number of records in the page
+	// update the total count of committed records in the file slot
+	RecordState.totalrecordcount = RecordState.totalrecordcount + 1;
+
+	Update_ShowFilesQuadrant();
+
 	//HAL_GPIO_TogglePin(LED_B_GPIO_Port, LED_B_Pin);
 	// Debug printouts to Terminal program.  DISABLE when using.
 	SendString((uint8_t*)"\n-=Page Header Accumulated in PWB!=-\r\n");
-  }
+
+	// Calculate record offset in the page (i.e. start of existing page)
+	recordoffset = (BYTES_PER_RECORD * RecordHeader.recordcount);
+
+	// protection - final record must have a starting address of 480 and no higher
+	//            - if its higher we go to zero
+	if(recordoffset > (PAGEDATA_W_ARRAY - BYTES_PER_RECORD))  // 512 - 32 = 480
+	{
+	  recordoffset = 0;
+	}
+}
+
+ // ------------------------------------------------------------------------------------------------------------------
+
+  // Get a record ready to add to the EEPROM
+  // Note: For a new page, the header above would have been added as well with the recordcount (for the page)
+  //           and totalrecordcount already incremented.
+  // Time (8 bytes)
+  EEPROMRecord.time[0] = Time.read_year;          // 0-99 (00-99)
+  EEPROMRecord.time[1] = Time.read_month;      // 1-12
+  EEPROMRecord.time[2] = Time.read_day;           // 1-31
+  EEPROMRecord.time[3] = Time.read_hour;         // 0-23 (24-hour format)
+  EEPROMRecord.time[4] = Time.read_minute;     // 0-59
+  EEPROMRecord.time[5] = Time.read_second;     // 0-59
+  EEPROMRecord.time[6] = Time.read_centisecond; // 0-99 centiseconds
+  EEPROMRecord.time[7] = Time.read_ampm;        // 0=AM, 1=PM (needed for 12-hour clock)
+  PageData.pagedata_w[recordoffset + 0] = EEPROMRecord.time[0];
+  PageData.pagedata_w[recordoffset + 1] = EEPROMRecord.time[1];
+  PageData.pagedata_w[recordoffset + 2] = EEPROMRecord.time[2];
+  PageData.pagedata_w[recordoffset + 3] = EEPROMRecord.time[3];
+  PageData.pagedata_w[recordoffset + 4] = EEPROMRecord.time[4];
+  PageData.pagedata_w[recordoffset + 5] = EEPROMRecord.time[5];
+  PageData.pagedata_w[recordoffset + 6] = EEPROMRecord.time[6];
+  PageData.pagedata_w[recordoffset + 7] = EEPROMRecord.time[7];
+
+  // Pressure (6 bytes) - raw value, conversion on software side.
+  EEPROMRecord.pressure[0] = (D1 >> 24) & 0xFF;
+  EEPROMRecord.pressure[1] = (D1 >> 16) & 0xFF;
+  EEPROMRecord.pressure[2] = (D1 >> 8) & 0xFF;
+  EEPROMRecord.pressure[3] = (D1) & 0xFF;
+  EEPROMRecord.pressure[4] = 0;
+  EEPROMRecord.pressure[5] = 0;
+  PageData.pagedata_w[recordoffset + 8] = EEPROMRecord.pressure[0];
+  PageData.pagedata_w[recordoffset + 9] = EEPROMRecord.pressure[1];
+  PageData.pagedata_w[recordoffset + 10] = EEPROMRecord.pressure[2];
+  PageData.pagedata_w[recordoffset + 11] = EEPROMRecord.pressure[3];
+  PageData.pagedata_w[recordoffset + 12] = EEPROMRecord.pressure[4];
+  PageData.pagedata_w[recordoffset + 13] = EEPROMRecord.pressure[5];
+  // Temperature  (6 bytes)  - raw value, conversion on software side.
+  EEPROMRecord.temperature[0] = (D2 >> 24) & 0xFF;
+  EEPROMRecord.temperature[1] = (D2 >> 16) & 0xFF;
+  EEPROMRecord.temperature[2] = (D2 >> 8) & 0xFF;
+  EEPROMRecord.temperature[3] = (D2) & 0xFF;
+  EEPROMRecord.temperature[4] = 0;
+  EEPROMRecord.temperature[5] = 0;
+  PageData.pagedata_w[recordoffset + 14] = EEPROMRecord.temperature[0];
+  PageData.pagedata_w[recordoffset + 15] = EEPROMRecord.temperature[1];
+  PageData.pagedata_w[recordoffset + 16] = EEPROMRecord.temperature[2];
+  PageData.pagedata_w[recordoffset + 17] = EEPROMRecord.temperature[3];
+  PageData.pagedata_w[recordoffset + 18] = EEPROMRecord.temperature[4];
+  PageData.pagedata_w[recordoffset + 19] = EEPROMRecord.temperature[5];
+  // Conductivity  (6 bytes) -- replace what's below with what needs to be replaced later
+  EEPROMRecord.conductivity[0] = (Sensor.conductivity >> 24) & 0xFF;
+  EEPROMRecord.conductivity[1] = (Sensor.conductivity >> 16) & 0xFF;
+  EEPROMRecord.conductivity[2] = (Sensor.conductivity >> 8) & 0xFF;
+  EEPROMRecord.conductivity[3] = (Sensor.conductivity) & 0xFF;
+  EEPROMRecord.conductivity[4] = 0;
+  EEPROMRecord.conductivity[5] = 0;
+  PageData.pagedata_w[recordoffset + 20] = EEPROMRecord.conductivity[0];
+  PageData.pagedata_w[recordoffset + 21] = EEPROMRecord.conductivity[1];
+  PageData.pagedata_w[recordoffset + 22] = EEPROMRecord.conductivity[2];
+  PageData.pagedata_w[recordoffset + 23] = EEPROMRecord.conductivity[3];
+  PageData.pagedata_w[recordoffset + 24] = EEPROMRecord.conductivity[4];
+  PageData.pagedata_w[recordoffset + 25] = EEPROMRecord.conductivity[5];
+  // Reserved  (6 bytes)
+  EEPROMRecord.reserved[0] = (Sensor.reserved >> 24) & 0xFF;
+  EEPROMRecord.reserved[1] = (Sensor.reserved >> 16) & 0xFF;
+  EEPROMRecord.reserved[2] = (Sensor.reserved >> 8) & 0xFF;
+  EEPROMRecord.reserved[3] = (Sensor.reserved) & 0xFF;
+  EEPROMRecord.reserved[4] = 0;
+  EEPROMRecord.reserved[5] = 0;
+  PageData.pagedata_w[recordoffset + 26] = EEPROMRecord.reserved[0];
+  PageData.pagedata_w[recordoffset + 27] = EEPROMRecord.reserved[1];
+  PageData.pagedata_w[recordoffset + 28] = EEPROMRecord.reserved[2];
+  PageData.pagedata_w[recordoffset + 29] = EEPROMRecord.reserved[3];
+  PageData.pagedata_w[recordoffset + 30] = EEPROMRecord.reserved[4];
+  PageData.pagedata_w[recordoffset + 31] = EEPROMRecord.reserved[5];
+  //HAL_GPIO_TogglePin(LED_A_GPIO_Port, LED_A_Pin);
+  // Debug printouts to Terminal program.  DISABLE when using.
+  SendString((uint8_t*)" One Record Accumulated in PWB!\r\n");
+
+  // ------------------------------------------------------------------------------------------------------------------
 
   // Debug printouts to Terminal program.  DISABLE when using.
   hi[0] = ((recordoffset + 32) >> 8) & 0xFF;
@@ -682,6 +709,8 @@ void FillPage(void)
 
   // Update ShowFiles ledger in EEPROM so that the PC always knows the current record count
   Update_ShowFilesQuadrant();
+
+  // ------------------------------------------------------------------------------------------------------------------
 
   //if((recordoffset + 32) == PAGEDATA_W_ARRAY)  // 512 == 512 meaning page buffer is filled, ready to write to page
   if(RecordHeader.recordcount == RECORDS_PER_PAGE)

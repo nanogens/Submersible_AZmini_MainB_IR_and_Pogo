@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "misc.h"
 #include "memory.h"
+#include "time.h"
 
 // Desc: Detects the reed switch state
 //       Does a 32000 continuous AND to de-bounce the switch
@@ -501,26 +502,41 @@ uint8_t IsTargetTimeReached(void)
 
 uint8_t IsEndTimeReached(void)
 {
+  // 1. Refresh internal variables safely via your existing working code
   RTC_ReadTime();
+
+  // 2. Convert hours to 24-hour format using your existing function
   uint8_t current_hour24 = Get24Hour(Time.read_hour, Time.read_ampm);
   uint8_t end_hour24 = Get24Hour(Activation.end_hour, Activation.end_ampm);
 
-  if (Time.read_year > Activation.end_year) return 1;
-  if (Time.read_year < Activation.end_year) return 0;
+  // 3. Populate broken-down time for the CURRENT time
+  struct tm current_tm = {0};
+  current_tm.tm_year = Time.read_year + 100; // tm_year expects years since 1900 (2000 + year - 1900 = year + 100)
+  current_tm.tm_mon  = Time.read_month - 1; // tm_mon expects 0 to 11
+  current_tm.tm_mday = Time.read_day;
+  current_tm.tm_hour = current_hour24;
+  current_tm.tm_min  = Time.read_minute;
+  current_tm.tm_sec  = Time.read_second;
+  current_tm.tm_isdst = -1;                 // Let the system determine Daylight Saving Time status
 
-  if (Time.read_month > Activation.end_month) return 1;
-  if (Time.read_month < Activation.end_month) return 0;
+  // 4. Populate broken-down time for the END time
+  struct tm end_tm = {0};
+  end_tm.tm_year = Activation.end_year + 100;
+  end_tm.tm_mon  = Activation.end_month - 1;
+  end_tm.tm_mday = Activation.end_day;
+  end_tm.tm_hour = end_hour24;
+  end_tm.tm_min  = Activation.end_minute;
+  end_tm.tm_sec  = Activation.end_second;
+  end_tm.tm_isdst = -1;
 
-  if (Time.read_day > Activation.end_day) return 1;
-  if (Time.read_day < Activation.end_day) return 0;
+  // 5. Convert both timestamps to standard linear Epoch seconds
+  time_t current_secs = mktime(&current_tm);
+  time_t end_secs     = mktime(&end_tm);
 
-  if (current_hour24 > end_hour24) return 1;
-  if (current_hour24 < end_hour24) return 0;
-
-  if (Time.read_minute > Activation.end_minute) return 1;
-  if (Time.read_minute < Activation.end_minute) return 0;
-
-  if (Time.read_second >= Activation.end_second) return 1;
+  // 6. Return 1 if current time is equal to or past the end time
+  if (current_secs >= end_secs) {
+    return 1;
+  }
 
   return 0;
 }
