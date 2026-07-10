@@ -12,6 +12,7 @@
 #include "lpuart.h"
 #include "tim.h"
 #include "misc.h"
+#include "pressure.h"
 
 
 // Function definition
@@ -122,6 +123,12 @@ void ProcessMsg(void)
     	          SaveRetrievedPagetoMemory((LogTransmitData.sector[1] << 8) + LogTransmitData.sector[0], LogTransmitData.page, BREAK_INTO_QUADRANT_YES); // sector 3 onwards, page 0 to 7 (in the case of the first file slot for instance)
     	        }
     	        Log_TransmitData_Resp();
+    	        break;
+
+      case CTD_READINGS_TARE_SENSOR_SET_MSGID:
+    	        CTD_Readings_Tare_Sensor_Set();
+    	        CTD_Readings_Tare();
+    	        CTD_Readings_Tare_Sensor_Resp();
     	        break;
 
       // Streaming
@@ -687,6 +694,27 @@ void Log_TransmitData_Resp(void)
         SendByte(PageData.pagedata_rq[LogTransmitData.quadrant][i]);
     }
     SendByte(Lpuart1.crcsend);
+}
+
+void CTD_Readings_Tare_Sensor_Set(void)
+{
+    CTDReadingsTareSensor.tare = Lpuart1shadow.payload[0];
+}
+
+void CTD_Readings_Tare_Sensor_Resp(void)
+{
+    SendHeader(CTD_READINGS_TARE_SENSOR_RESP_MSGLGT, CTD_READINGS_TARE_SENSOR_RESP_MSGID);
+    SendByte(CTDReadingsTareSensor.tare);
+    SendByte(Lpuart1.crcsend);
+}
+
+void CTD_Readings_Tare(void)
+{
+    float press = 0.0f;
+    float temp = 0.0f;
+    if (MS5837_ReadPT_FirstOrder(&press, &temp)) {
+        surface_pressure = press;
+    }
 }
 
 void Bootloader_FWUpdate_Resp(void)

@@ -161,8 +161,9 @@ bool Search_MsgID(uint8_t settingorquery, uint8_t messageidglobal)
 
 		(messageidglobal == BOOTLOADER_TRANSMITDATA_SET_MSGID) ||
 
-		(messageidglobal == BOOTLOADER_FWUPDATE_SET_MSGID)
+		(messageidglobal == BOOTLOADER_FWUPDATE_SET_MSGID) ||
 
+		(messageidglobal == CTD_READINGS_TARE_SENSOR_SET_MSGID)
       )
 	{
 	  return true;

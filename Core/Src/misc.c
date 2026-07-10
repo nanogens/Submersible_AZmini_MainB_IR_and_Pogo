@@ -268,39 +268,42 @@ uint8_t Write_FileSettings(void)
   // 1. Write status
   PageData.pagedata_w[0] = FILE_SLOT_OCCUPIED;  // shows its now occupied
 
-  // 2. Write Sampling configurations
-  PageData.pagedata_w[1] = Sampling.mode;
-  PageData.pagedata_w[2] = Sampling.rate;
+  // 2. Pressure (and Temperature) Sensor in use by the instrument
+  PageData.pagedata_w[1] = PRESSURE_SENSOR_CURRENTLY_IN_USE;
+
+  // 3. Write Sampling configurations
+  PageData.pagedata_w[2] = Sampling.mode;
+  PageData.pagedata_w[3] = Sampling.rate;
   
-  // 3. Write Activation configurations (Time & Event triggers)
-  PageData.pagedata_w[3] = Activation.start_year;
-  PageData.pagedata_w[4] = Activation.start_month;
-  PageData.pagedata_w[5] = Activation.start_day;
-  PageData.pagedata_w[6] = Activation.start_hour;
-  PageData.pagedata_w[7] = Activation.start_minute;
-  PageData.pagedata_w[8] = Activation.start_second;
-  PageData.pagedata_w[9] = Activation.start_ampm;
+  // 4. Write Activation configurations (Time & Event triggers)
+  PageData.pagedata_w[4] = Activation.start_year;
+  PageData.pagedata_w[5] = Activation.start_month;
+  PageData.pagedata_w[6] = Activation.start_day;
+  PageData.pagedata_w[7] = Activation.start_hour;
+  PageData.pagedata_w[8] = Activation.start_minute;
+  PageData.pagedata_w[9] = Activation.start_second;
+  PageData.pagedata_w[10] = Activation.start_ampm;
   
-  PageData.pagedata_w[10] = Activation.end_year;
-  PageData.pagedata_w[11] = Activation.end_month;
-  PageData.pagedata_w[12] = Activation.end_day;
-  PageData.pagedata_w[13] = Activation.end_hour;
-  PageData.pagedata_w[14] = Activation.end_minute;
-  PageData.pagedata_w[15] = Activation.end_second;
-  PageData.pagedata_w[16] = Activation.end_ampm;
+  PageData.pagedata_w[11] = Activation.end_year;
+  PageData.pagedata_w[12] = Activation.end_month;
+  PageData.pagedata_w[13] = Activation.end_day;
+  PageData.pagedata_w[14] = Activation.end_hour;
+  PageData.pagedata_w[15] = Activation.end_minute;
+  PageData.pagedata_w[16] = Activation.end_second;
+  PageData.pagedata_w[17] = Activation.end_ampm;
   
-  PageData.pagedata_w[17] = Activation.eventtrigger;
-  PageData.pagedata_w[18] = Activation.eventthreshold;
+  PageData.pagedata_w[18] = Activation.eventtrigger;
+  PageData.pagedata_w[19] = Activation.eventthreshold;
   
-  // 4. Write Notes arrays (Char buffers)
+  // 5. Write Notes arrays (Char buffers)
   for (uint8_t x = 0; x < MAX_NOTES_NAME_ARRAY; x++) {
-      PageData.pagedata_w[19 + x] = Notes.name[x];
+      PageData.pagedata_w[20 + x] = Notes.name[x];
   }
   for (uint8_t y = 0; y < MAX_NOTES_LOCATION_ARRAY; y++) {
-      PageData.pagedata_w[43 + y] = Notes.location[y];
+      PageData.pagedata_w[44 + y] = Notes.location[y];
   }
   for (uint8_t z = 0; z < MAX_NOTES_NOTE_ARRAY; z++) {
-      PageData.pagedata_w[67 + z] = Notes.note[z];
+      PageData.pagedata_w[68 + z] = Notes.note[z];
   }
 
   // Write the meta data to the sector & page specified (auto-erase is done internally by Mem_WriteData)

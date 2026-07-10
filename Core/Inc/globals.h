@@ -353,6 +353,11 @@ struct LogTransmitData1 {
 };
 extern struct LogTransmitData1 LogTransmitData;
 
+struct CTDReadingsTareSensor1 {
+  uint8_t tare;
+};
+extern struct CTDReadingsTareSensor1 CTDReadingsTareSensor;
+
 extern uint16_t C[PERSSURESENSOR_ROM_ARRAY];
 extern uint32_t D1;
 extern uint32_t D2;

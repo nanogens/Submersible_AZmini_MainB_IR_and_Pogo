@@ -41,6 +41,7 @@ struct PageData1 PageData;
 struct Sensor1 Sensor;
 struct LogReadSpecificFile1 LogReadSpecificFile;
 struct LogTransmitData1 LogTransmitData;
+struct CTDReadingsTareSensor1 CTDReadingsTareSensor;
 
 // MS5837 Variables
 uint16_t C[PERSSURESENSOR_ROM_ARRAY];

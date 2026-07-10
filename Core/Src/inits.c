@@ -362,7 +362,7 @@ void Inits_Var(void)
   Sensor.conductivity = 0;
   Sensor.reserved = 0;
 
-    LogReadSpecificFile.whichfile = 0;
+  LogReadSpecificFile.whichfile = 0;
   LogReadSpecificFile.reserved = 0;
 
   // Set
@@ -377,6 +377,8 @@ void Inits_Var(void)
   }
   LogTransmitData.page = 0;
   LogTransmitData.quadrant = 0;
+
+  CTDReadingsTareSensor.tare = 0;
 
   /*
   for(Counter.y0 = 0; Counter.y0 < MAX_CTD_PRESS_ARRAY; Counter.y0++)

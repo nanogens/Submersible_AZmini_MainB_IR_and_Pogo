@@ -9,6 +9,8 @@
 #include "stdio.h"
 #include "pressure.h"
 
+float surface_pressure = SURFACE_PRESSURE;
+
 // Debug print wrapper
 void DebugPrint(const uint8_t* message)
 {
@@ -269,8 +271,6 @@ void DebugSensor(void)
     static uint8_t initialized = 0;
     static uint8_t error_count = 0;
     static uint32_t last_reset_time = 0;
-
-    static float surface_pressure = SURFACE_PRESSURE; // Sea level pressure
 
     if (!initialized)
     {

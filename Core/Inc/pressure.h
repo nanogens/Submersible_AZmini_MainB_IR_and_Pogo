@@ -40,6 +40,6 @@ extern void SendString(uint8_t* str);
 extern I2C_HandleTypeDef hi2c1;
 
 // VARIABLES ================================================
-
+extern float surface_pressure;
 
 #endif /* INC_PRESSURE_H */

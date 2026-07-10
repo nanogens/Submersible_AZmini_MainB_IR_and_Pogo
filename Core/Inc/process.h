@@ -39,6 +39,10 @@ void Log_ReadSpecificFile_Resp(void);
 void Log_TransmitData_Set(void);
 void Log_TransmitData_Resp(void);
 
+void CTD_Readings_Tare_Sensor_Set(void);
+void CTD_Readings_Tare(void);
+void CTD_Readings_Tare_Sensor_Resp(void);
+
 // Bootloader
 void Bootloader_FWUpdate_Resp(void);
 void Bootloader_JumpToBootloader(void);

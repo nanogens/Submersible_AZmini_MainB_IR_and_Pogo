@@ -18,8 +18,18 @@
     #error "Please select either POGO_LPUART1 or IR_USART2 in defines.h"
 #endif
 // ============================================
+// The following is used in the Write_FileSettings() function in misc.c when a recording session is started.
+// It stores information on the type of pressure (and temperature sensor) in use by the instrument.
+// It is sent as part of a response message to Octopus via this message (LOG_READSPECIFICFILE_RESP_MSGID).
+// Octopus is then able to identify and post-process it accordingly.
+// Note: More sensor types may be tried out in the future and accordingly, define statements below will be added for each sensor.
+#define SENSOR_ID_MS5837_50BAR 0x01 // MS583730BA01-50
+#define SENSOR_ID_MS5837_2BAR 0x02   // MS5837-02BA21
+#define SENSOR_ID_MPM281II_2BAR 0x03 // MPM281 II - 07 - A - 0 - L - 1 (Micro Sense)
+// IMPORTANT: Change this according to the type of pressure (and temperature) sensor in use
+#define PRESSURE_SENSOR_CURRENTLY_IN_USE SENSOR_ID_MS5837_2BAR
 
-
+// ============================================
 // Debug Print
 #define DEBUG_SENSOR 0// 1 to show ascii readouts in console, 0 to not
 
@@ -374,6 +384,15 @@
 
 #define SUBMERSIBLE_INFO_RESP_MSGLGT 0x4A
 #define SUBMERSIBLE_INFO_RESP_MSGID 0x29
+
+// IMPORTANT: Note that we ran out of addresses in the 0x20 range
+//            and we are using 0x9A range for this.
+//            Do not use the 0x9A range below for other messages.
+#define CTD_READINGS_TARE_SENSOR_SET_MSGID 0x9A
+#define CTD_READINGS_TARE_SENSOR_SET_MSGLGT 0x08
+
+#define CTD_READINGS_TARE_SENSOR_RESP_MSGID 0x9B
+#define CTD_READINGS_TARE_SENSOR_RESP_MSGLGT 0x08
 
 // Logging
 #define LOG_SHOWFILES_QUERY_MSGID 0x50
