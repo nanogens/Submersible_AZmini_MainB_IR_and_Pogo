@@ -371,10 +371,31 @@ int main(void)
             if (ApplyRecordingPlan.run == PLAN_RUN_YES)
             {
 #if DEBUG_SENSOR
-                SendString((uint8_t*)"[DEBUG] Scheduled plan pending. Entering periodic sleep...\r\n");
+                SendString((uint8_t*)"[DEBUG] Scheduled plan pending. Checking remaining time to start...\r\n");
                 HAL_Delay(50);
 #endif
-                Enter_Recording_Sleep(5); // Wake up every 5 seconds to check target time
+                uint32_t seconds_until_start = GetSecondsUntilStart();
+                if (seconds_until_start > 5)
+                {
+                    uint32_t sleep_duration = seconds_until_start - 5;
+                    // Cap sleep duration at 3600 seconds (1 hour) to ensure periodic sanity checks
+                    if (sleep_duration > 3600)
+                    {
+                        sleep_duration = 3600;
+                    }
+#if DEBUG_SENSOR
+                    char sleep_msg[64];
+                    sprintf(sleep_msg, "[DEBUG] Sleeping for %lu seconds...\r\n", (unsigned long)sleep_duration);
+                    SendString((uint8_t*)sleep_msg);
+                    HAL_Delay(50);
+#endif
+                    Enter_Recording_Sleep(sleep_duration);
+                }
+                else
+                {
+                    // Less than 5 seconds remaining. Stay awake to start exactly on time.
+                    HAL_Delay(100);
+                }
             }
             else
             {

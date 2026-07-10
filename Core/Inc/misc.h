@@ -23,6 +23,7 @@ void DebugMemory4(void);
 uint8_t Get24Hour(uint8_t hour12, uint8_t ampm);
 uint8_t IsTargetTimeReached(void);
 uint8_t IsEndTimeReached(void);
+uint32_t GetSecondsUntilStart(void);
 
 void Enter_Deep_Sleep(void);
 void Exit_Deep_Sleep(void);

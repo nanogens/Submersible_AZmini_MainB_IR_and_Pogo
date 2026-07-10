@@ -5,6 +5,8 @@
 #include "memory.h"
 #include "time.h"
 
+extern RTC_HandleTypeDef hrtc;
+
 // Desc: Detects the reed switch state
 //       Does a 32000 continuous AND to de-bounce the switch
 void ReedSwitch_Detect(void)
@@ -413,6 +415,7 @@ void RecordingStart(void)
     {
       RecordState.started = RECORDING_ONGOING;
       ApplyRecordingPlan.started = PLAN_STARTED; // so we can indicate to Settings page that the recording session has started (needed for the button)
+      HAL_RTCEx_DeactivateWakeUpTimer(&hrtc); // Ensure the periodic RTC wakeup timer is deactivated during active recording
       DeterminePageAddress();
 #if DEBUG_SENSOR
       SendString((uint8_t*)"\n\nIn Write_FileSettings, Outcome is RECORDING_ONGOING...\r");
@@ -539,6 +542,40 @@ uint8_t IsEndTimeReached(void)
   // 6. Return 1 if current time is equal to or past the end time
   if (current_secs >= end_secs) {
     return 1;
+  }
+
+  return 0;
+}
+
+uint32_t GetSecondsUntilStart(void)
+{
+  RTC_ReadTime();
+  uint8_t current_hour24 = Get24Hour(Time.read_hour, Time.read_ampm);
+  uint8_t target_hour24 = Get24Hour(Activation.start_hour, Activation.start_ampm);
+
+  struct tm current_tm = {0};
+  current_tm.tm_year = Time.read_year + 100; // tm_year expects years since 1900
+  current_tm.tm_mon  = Time.read_month - 1; // tm_mon expects 0 to 11
+  current_tm.tm_mday = Time.read_day;
+  current_tm.tm_hour = current_hour24;
+  current_tm.tm_min  = Time.read_minute;
+  current_tm.tm_sec  = Time.read_second;
+  current_tm.tm_isdst = -1;
+
+  struct tm target_tm = {0};
+  target_tm.tm_year = Activation.start_year + 100;
+  target_tm.tm_mon  = Activation.start_month - 1;
+  target_tm.tm_mday = Activation.start_day;
+  target_tm.tm_hour = target_hour24;
+  target_tm.tm_min  = Activation.start_minute;
+  target_tm.tm_sec  = Activation.start_second;
+  target_tm.tm_isdst = -1;
+
+  time_t current_secs = mktime(&current_tm);
+  time_t target_secs  = mktime(&target_tm);
+
+  if (target_secs > current_secs) {
+    return (uint32_t)(target_secs - current_secs);
   }
 
   return 0;
