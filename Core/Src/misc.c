@@ -618,14 +618,17 @@ void Enter_Deep_Sleep(void)
 {
   is_sleeping = true;
 
-  // 1. Configure REC_START pin as EXTI interrupt to wake the CPU
+  // 1. Shut off the load switch first to power down sensors and EEPROM
+  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_RESET);
+
+  // Wait 10 ms for the 3p0_GEN rail to fully discharge and pin transitions to settle
+  HAL_Delay(10);
+
+  // 2. Configure REC_START pin as EXTI interrupt to wake the CPU
   Set_REC_START_Pin_As_Interrupt();
   __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
   HAL_NVIC_ClearPendingIRQ(EXTI4_15_IRQn);
   HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
-
-  // 2. Shut off the load switch to power down sensors and EEPROM
-  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_RESET);
 
   // 3. Put SPI and I2C pins into Analog No-Pull mode to prevent back-feeding current
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -634,7 +637,7 @@ void Enter_Deep_Sleep(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  // Clear pending EXTI line flags for Reed Switch / Photodiode wakeup lines
+  // Clear pending EXTI line flags again to be absolutely sure
   __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
   HAL_NVIC_ClearPendingIRQ(EXTI4_15_IRQn);
 
@@ -650,6 +653,22 @@ void Enter_Deep_Sleep(void)
 
 void Exit_Deep_Sleep(void)
 {
+  uint8_t wakeup_source = 0; // 0 = unknown, 1 = EXTI (PB13), 2 = RTC
+  if (__HAL_GPIO_EXTI_GET_IT(REC_START_Pin) != RESET) {
+      wakeup_source = 1;
+  } else if (__HAL_RTC_WAKEUPTIMER_GET_FLAG(&hrtc, RTC_FLAG_WUTF) != RESET) {
+      wakeup_source = 2;
+  }
+
+  // Restore CS_MEM_0_BAR_Pin to Output Push-Pull (High) before powering up the load switch
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = CS_MEM_0_BAR_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(CS_MEM_0_BAR_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_WritePin(CS_MEM_0_BAR_GPIO_Port, CS_MEM_0_BAR_Pin, GPIO_PIN_SET);
+
   // 1. Power up the general load switch immediately on wakeup (powers clock oscillator, IrDA transceiver, and sensor EEPROM)
   HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
   last_power_on_time = HAL_GetTick();
@@ -683,6 +702,15 @@ void Exit_Deep_Sleep(void)
   (void)temp;
   HAL_UART_Receive_IT(&hlpuart1, &rx_buffer[0], 1);
 #endif
+
+  // Print wakeup source
+  if (wakeup_source == 1) {
+      SendString((uint8_t*)"[DIAG] Wakeup Source: EXTI PB13 (REC_START)!\r\n");
+  } else if (wakeup_source == 2) {
+      SendString((uint8_t*)"[DIAG] Wakeup Source: RTC Wakeup Timer!\r\n");
+  } else {
+      SendString((uint8_t*)"[DIAG] Wakeup Source: Unknown / Noise!\r\n");
+  }
 
   // Reset inactivity watchdog timer so the CPU has 10 seconds to communicate before sleeping again
   last_activity_time = HAL_GetTick();
@@ -752,27 +780,30 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   HAL_Delay(50);
 #endif
 
-  // Configure REC_START (phototransceiver / photodiode) pin as EXTI interrupt to wake CPU
+  // 1. Shut off the load switch first to power down sensors and EEPROM
+  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_RESET);
+
+  // Wait 10 ms for the 3p0_GEN rail to fully discharge and pin transitions to settle
+  HAL_Delay(10);
+
+  // 2. Turn off LED_A during sleep to save power and provide status indication
+  HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
+
+  // 3. Suspend the 1 ms SysTick timer to prevent pending tick interrupts from waking CPU
+  HAL_SuspendTick();
+
+  // 4. Disable IrDA, LPUART, and TIM2 interrupts in the NVIC to prevent premature wakeups
+  HAL_NVIC_DisableIRQ(USART2_IRQn);
+  HAL_NVIC_DisableIRQ(LPUART1_IRQn);
+  HAL_NVIC_DisableIRQ(TIM2_IRQn);
+
+  // 5. Configure REC_START (phototransceiver / photodiode) pin as EXTI interrupt to wake CPU
   Set_REC_START_Pin_As_Interrupt();
   __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
   HAL_NVIC_ClearPendingIRQ(EXTI4_15_IRQn);
   HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
-  // Turn off LED_A during sleep to save power and provide status indication
-  HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_RESET);
-
-  // Suspend the 1 ms SysTick timer to prevent pending tick interrupts from waking CPU
-  HAL_SuspendTick();
-
-  // Disable IrDA, LPUART, and TIM2 interrupts in the NVIC to prevent premature wakeups
-  HAL_NVIC_DisableIRQ(USART2_IRQn);
-  HAL_NVIC_DisableIRQ(LPUART1_IRQn);
-  HAL_NVIC_DisableIRQ(TIM2_IRQn);
-
-  // 2. Shut off the load switch to power down sensors and EEPROM
-  HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_RESET);
-
-  // 3. Put SPI and I2C pins into Analog No-Pull mode to prevent back-feeding current
+  // 6. Put SPI and I2C pins into Analog No-Pull mode to prevent back-feeding current
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_9 | GPIO_PIN_10;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
@@ -807,6 +838,13 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
 
 void Exit_Recording_Sleep(void)
 {
+  uint8_t wakeup_source = 0; // 0 = unknown, 1 = EXTI (PB13), 2 = RTC
+  if (__HAL_GPIO_EXTI_GET_IT(REC_START_Pin) != RESET) {
+      wakeup_source = 1;
+  } else if (__HAL_RTC_WAKEUPTIMER_GET_FLAG(&hrtc, RTC_FLAG_WUTF) != RESET) {
+      wakeup_source = 2;
+  }
+
   // 1. Resume SysTick timer first so that HAL_Delay() works
   HAL_ResumeTick();
 
@@ -855,6 +893,15 @@ void Exit_Recording_Sleep(void)
   (void)temp;
   HAL_UART_Receive_IT(&hlpuart1, &rx_buffer[0], 1);
 #endif
+
+  // Print wakeup source
+  if (wakeup_source == 1) {
+      SendString((uint8_t*)"[DIAG] Wakeup Source: EXTI PB13 (REC_START)!\r\n");
+  } else if (wakeup_source == 2) {
+      SendString((uint8_t*)"[DIAG] Wakeup Source: RTC Wakeup Timer!\r\n");
+  } else {
+      SendString((uint8_t*)"[DIAG] Wakeup Source: Unknown / Noise!\r\n");
+  }
 
   // Reset inactivity watchdog timer so the CPU has 10 seconds to communicate before sleeping again
   last_activity_time = HAL_GetTick();

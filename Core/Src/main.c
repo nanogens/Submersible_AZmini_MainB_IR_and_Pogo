@@ -313,6 +313,24 @@ int main(void)
 
   HAL_GPIO_WritePin(CS_MEM_0_BAR_GPIO_Port, CS_MEM_0_BAR_Pin, GPIO_PIN_SET);
 
+  // Check and print the reset source
+  if (__HAL_RCC_GET_FLAG(RCC_FLAG_IWDGRST)) {
+      SendString((uint8_t*)"[DIAG] Reset Source: Independent Watchdog Reset!\r\n");
+  }
+  if (__HAL_RCC_GET_FLAG(RCC_FLAG_SFTRST)) {
+      SendString((uint8_t*)"[DIAG] Reset Source: Software Reset!\r\n");
+  }
+  if (__HAL_RCC_GET_FLAG(RCC_FLAG_PORRST)) {
+      SendString((uint8_t*)"[DIAG] Reset Source: Power-On Reset!\r\n");
+  }
+  if (__HAL_RCC_GET_FLAG(RCC_FLAG_PINRST)) {
+      SendString((uint8_t*)"[DIAG] Reset Source: Pin Reset (NRST)!\r\n");
+  }
+  if (__HAL_RCC_GET_FLAG(RCC_FLAG_LPWRRST)) {
+      SendString((uint8_t*)"[DIAG] Reset Source: Low-Power Reset!\r\n");
+  }
+  __HAL_RCC_CLEAR_RESET_FLAGS();
+
   for (int i=0; i<20; i++) {
       HAL_GPIO_WritePin(LED_A_GPIO_Port, LED_A_Pin, GPIO_PIN_SET);
       HAL_Delay(50);
