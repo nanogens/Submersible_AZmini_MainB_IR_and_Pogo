@@ -314,6 +314,7 @@ int main(void)
   HAL_GPIO_WritePin(CS_MEM_0_BAR_GPIO_Port, CS_MEM_0_BAR_Pin, GPIO_PIN_SET);
 
   // Check and print the reset source
+#if DEBUG_STOPMODE
   if (__HAL_RCC_GET_FLAG(RCC_FLAG_IWDGRST)) {
       SendString((uint8_t*)"[DIAG] Reset Source: Independent Watchdog Reset!\r\n");
   }
@@ -329,6 +330,7 @@ int main(void)
   if (__HAL_RCC_GET_FLAG(RCC_FLAG_LPWRRST)) {
       SendString((uint8_t*)"[DIAG] Reset Source: Low-Power Reset!\r\n");
   }
+#endif
   __HAL_RCC_CLEAR_RESET_FLAGS();
 
   for (int i=0; i<20; i++) {

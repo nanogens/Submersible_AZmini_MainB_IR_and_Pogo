@@ -653,12 +653,14 @@ void Enter_Deep_Sleep(void)
 
 void Exit_Deep_Sleep(void)
 {
+#if DEBUG_STOPMODE
   uint8_t wakeup_source = 0; // 0 = unknown, 1 = EXTI (PB13), 2 = RTC
   if (__HAL_GPIO_EXTI_GET_IT(REC_START_Pin) != RESET) {
       wakeup_source = 1;
   } else if (__HAL_RTC_WAKEUPTIMER_GET_FLAG(&hrtc, RTC_FLAG_WUTF) != RESET) {
       wakeup_source = 2;
   }
+#endif
 
   // Restore CS_MEM_0_BAR_Pin to Output Push-Pull (High) before powering up the load switch
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -703,6 +705,7 @@ void Exit_Deep_Sleep(void)
   HAL_UART_Receive_IT(&hlpuart1, &rx_buffer[0], 1);
 #endif
 
+#if DEBUG_STOPMODE
   // Print wakeup source
   if (wakeup_source == 1) {
       SendString((uint8_t*)"[DIAG] Wakeup Source: EXTI PB13 (REC_START)!\r\n");
@@ -711,6 +714,7 @@ void Exit_Deep_Sleep(void)
   } else {
       SendString((uint8_t*)"[DIAG] Wakeup Source: Unknown / Noise!\r\n");
   }
+#endif
 
   // Reset inactivity watchdog timer so the CPU has 10 seconds to communicate before sleeping again
   last_activity_time = HAL_GetTick();
@@ -838,12 +842,14 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
 
 void Exit_Recording_Sleep(void)
 {
+#if DEBUG_STOPMODE
   uint8_t wakeup_source = 0; // 0 = unknown, 1 = EXTI (PB13), 2 = RTC
   if (__HAL_GPIO_EXTI_GET_IT(REC_START_Pin) != RESET) {
       wakeup_source = 1;
   } else if (__HAL_RTC_WAKEUPTIMER_GET_FLAG(&hrtc, RTC_FLAG_WUTF) != RESET) {
       wakeup_source = 2;
   }
+#endif
 
   // 1. Resume SysTick timer first so that HAL_Delay() works
   HAL_ResumeTick();
@@ -894,6 +900,7 @@ void Exit_Recording_Sleep(void)
   HAL_UART_Receive_IT(&hlpuart1, &rx_buffer[0], 1);
 #endif
 
+#if DEBUG_STOPMODE
   // Print wakeup source
   if (wakeup_source == 1) {
       SendString((uint8_t*)"[DIAG] Wakeup Source: EXTI PB13 (REC_START)!\r\n");
@@ -902,6 +909,7 @@ void Exit_Recording_Sleep(void)
   } else {
       SendString((uint8_t*)"[DIAG] Wakeup Source: Unknown / Noise!\r\n");
   }
+#endif
 
   // Reset inactivity watchdog timer so the CPU has 10 seconds to communicate before sleeping again
   last_activity_time = HAL_GetTick();

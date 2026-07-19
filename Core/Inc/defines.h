@@ -31,7 +31,8 @@
 
 // ============================================
 // Debug Print
-#define DEBUG_SENSOR 1// 1 to show ascii readouts in console, 0 to not
+#define DEBUG_SENSOR 0// 1 to show ascii readouts in console, 0 to not
+#define DEBUG_STOPMODE 0 // 1 to show ascii readouts for entry/exit and reset into Stop Mode, 0 to not
 
 #define DLE 0x10
 #define STX 0x02
