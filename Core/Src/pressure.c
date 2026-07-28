@@ -149,22 +149,80 @@ uint8_t MS5837_ReadPT_FirstOrder(float *pressure_mbar, float *temp_c)
     D2 = MS5837_ReadADC(CMD_CONVERT_D2);
     if (D2 == 0xFFFFFFFF) return 0;
 
-    // 1st-order calculations using int64_t to prevent overflow
-    int32_t dT = D2 - ((uint32_t)C[5] << 8);                     // dT = D2 - C5*2^8
-    int32_t TEMP = 2000 + ((int64_t)dT * C[6]) / 8388608LL;      // TEMP in 0.01°C
+    if (PRESSURE_SENSOR_CURRENTLY_IN_USE == SENSOR_ID_MS5837_2BAR) {
+        // Apply MS5837-02BA (2 bar) formulas using 64-bit integers
+        int64_t dT = D2 - ((int64_t)C[5] * 256);
+        int64_t TEMP = 2000 + (dT * C[6]) / 8388608LL;
 
-    int64_t OFF  = ((int64_t)C[2] << 16) + ((int64_t)C[4] * dT) / 128;  // OFF_t1 + TCO*dT/2^7
-    int64_t SENS = ((int64_t)C[1] << 15) + ((int64_t)C[3] * dT) / 256;  // SENS_t1 + TCS*dT/2^8
+        int64_t SENS = (int64_t)C[1] * 65536 + (C[3] * dT) / 128;
+        int64_t OFF = (int64_t)C[2] * 131072 + (C[4] * dT) / 64;
 
-    // Pressure calculation with safe 64-bit multiplication
-    int32_t P = ((( (int64_t)D1 * SENS) / 2097152LL - OFF) / 8192LL);   // P in 0.1 mbar
+        // Second order temperature compensation for 02BA
+        int64_t T2 = 0;
+        int64_t OFF2_corr = 0;
+        int64_t SENS2_corr = 0;
 
-    Sensor.temperature = TEMP;  // temp in 0.01 C
-    Sensor.pressure = P;        // press in 0.1 mbar
+        if (TEMP < 2000) { // Low temperature compensation (below 20°C)
+            T2 = 11 * (dT * dT) / 34359738368LL;
+            OFF2_corr = 31 * ((TEMP - 2000) * (TEMP - 2000)) / 8;
+            SENS2_corr = 63 * ((TEMP - 2000) * (TEMP - 2000)) / 32;
+        }
 
-    // Convert to float outputs
-    *temp_c = TEMP / 100.0f;           // °C
-    *pressure_mbar = P / 10.0f;        // mbar
+        TEMP = TEMP - T2;
+        int64_t OFF2 = OFF - OFF2_corr;
+        int64_t SENS2 = SENS - SENS2_corr;
+
+        int64_t P = (((D1 * SENS2) / 2097152LL) - OFF2) / 32768LL;
+
+        Sensor.temperature = TEMP;
+        Sensor.pressure = P / 10; // Store in 0.1 mbar units for firmware consistency
+
+        *temp_c = TEMP / 100.0f;           // °C
+        *pressure_mbar = P / 100.0f;       // mbar (resolution is 0.01 mbar, so divide by 100)
+    }
+    else if (PRESSURE_SENSOR_CURRENTLY_IN_USE == SENSOR_ID_MS5837_30BAR) {
+        // Default to MS5837-30BA (30 bar) formulas
+        int64_t dT = D2 - ((int64_t)C[5] << 8);
+        int64_t TEMP = 2000 + (dT * C[6]) / 8388608LL;
+
+        int64_t OFF = ((int64_t)C[2] << 16) + (C[4] * dT) / 128;
+        int64_t SENS = ((int64_t)C[1] << 15) + (C[3] * dT) / 256;
+
+        // Second order temperature compensation for 30BA
+        int64_t T2 = 0;
+        int64_t OFF2_corr = 0;
+        int64_t SENS2_corr = 0;
+
+        if (TEMP < 2000) { // Low temperature compensation (below 20°C)
+            T2 = 3 * (dT * dT) / 8589934592LL;
+            OFF2_corr = 3 * ((TEMP - 2000) * (TEMP - 2000)) / 2;
+            SENS2_corr = 5 * ((TEMP - 2000) * (TEMP - 2000)) / 8;
+
+            if (TEMP < -1500) { // Very low temperature compensation (below -15°C)
+                OFF2_corr = OFF2_corr + 7 * ((TEMP + 1500) * (TEMP + 1500));
+                SENS2_corr = SENS2_corr + 11 * ((TEMP + 1500) * (TEMP + 1500)) / 2;
+            }
+        }
+
+        TEMP = TEMP - T2;
+        int64_t OFF2 = OFF - OFF2_corr;
+        int64_t SENS2 = SENS - SENS2_corr;
+
+        int64_t P = (((D1 * SENS2) / 2097152LL) - OFF2) / 8192LL;
+
+        Sensor.temperature = TEMP;
+        Sensor.pressure = P; // Store in 0.1 mbar units
+
+        *temp_c = TEMP / 100.0f;           // °C
+        *pressure_mbar = P / 10.0f;        // mbar (resolution is 0.1 mbar, so divide by 10)
+    }
+    else {
+        // Placeholder for future SENSOR_ID_MPM281II_2BAR
+        Sensor.temperature = 0;
+        Sensor.pressure = 0;
+        *temp_c = 0.0f;
+        *pressure_mbar = 0.0f;
+    }
 
     return 1;
 }
@@ -173,44 +231,7 @@ uint8_t MS5837_ReadPT_FirstOrder(float *pressure_mbar, float *temp_c)
 // Sent to New Orleans (Lousiana) show with this function version enabled
 uint8_t  MS5837_ReadPT(float *pressure_mbar, float *temp_c)
 {
-    uint32_t D1 = MS5837_ReadADC(CMD_CONVERT_D1);
-    if(D1 == 0xFFFFFFFF) return 0;
-
-    uint32_t D2 = MS5837_ReadADC(CMD_CONVERT_D2);
-    if(D2 == 0xFFFFFFFF) return 0;
-
-    // First order Calculation of Temperature and Pressure
-/*
-    int32_t dT = D2 - ((uint32_t)C[5] << 8);
-    int32_t TEMP = 2000 + ((int64_t)dT * C[6]) / 8388608;
-
-    int64_t OFF = ((int64_t)C[2] << 16) + ((int64_t)C[4] * dT) / 64; // MT: was /128 // MT : should be / 64
-    //int64_t SENS = ((int64_t)C[1] << 15) + ((int64_t)C[3] * dT) / 128; // MT: was /256 // MT: should be / 128
-
-    int32_t P = (((D1 * SENS) / 2097152 - OFF) / 32768); // MT: was /8192  // MT: should be / 32768
-
-    *temp_c = TEMP / 100.0f;
-    *pressure_mbar = P / 100.0f;  // MT: was /10.0f // MT: should be / 100.0f
-
-*/
-
-    int32_t dT = D2 - ((uint32_t)C[5] << 8);
-    int32_t TEMP = 2000 + ((int64_t)dT * C[6]) / 8388608;
-
-    int64_t OFF = ((int64_t)C[2] << 16) + ((int64_t)C[4] * dT) / 128; // MT: was /128 // MT : should be / 64
-    int64_t SENS = ((int64_t)C[1] << 15) + ((int64_t)C[3] * dT) / 256; // MT: was /256 // MT: should be / 128
-
-    //int32_t P = (((D1 * SENS) / 2097152 - OFF) / 8192); // MT: was /8192  // MT: should be / 32768
-    int32_t P = ((( (int64_t)D1 * SENS) / 2097152 - OFF) / 8192);  // MT After show: cast int64_t to prevent overflow
-
-    *temp_c = TEMP / 100.0f;
-    *pressure_mbar = P / 10.0f;  // MT: was /10.0f // MT: should be / 100.0f
-
-
-    // Second Order Calculation of Temperature and Pressure -- needs to be implemented
-
-
-    return 1;  // why do we even need a uint8_t return (see function definition) ?  eliminate it?
+    return MS5837_ReadPT_FirstOrder(pressure_mbar, temp_c);
 }
 
 

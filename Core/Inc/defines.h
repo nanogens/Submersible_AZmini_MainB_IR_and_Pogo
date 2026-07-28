@@ -27,7 +27,7 @@
 #define SENSOR_ID_MS5837_2BAR 0x02   // MS5837-02BA21
 #define SENSOR_ID_MPM281II_2BAR 0x03 // MPM281 II - 07 - A - 0 - L - 1 (Micro Sense)
 // IMPORTANT: Change this according to the type of pressure (and temperature) sensor in use
-#define PRESSURE_SENSOR_CURRENTLY_IN_USE SENSOR_ID_MS5837_30BAR
+#define PRESSURE_SENSOR_CURRENTLY_IN_USE SENSOR_ID_MS5837_2BAR
 
 // ============================================
 // Debug Print
