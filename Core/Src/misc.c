@@ -766,8 +766,8 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   __HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&hrtc, RTC_FLAG_WUTF);
 
   // The timer count is 0-indexed, so we subtract 1.
-  // We wake up 1 second early, so we configure it for (interval_seconds - 1) - 1.
-  HAL_StatusTypeDef status = HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, interval_seconds - 2, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+  // We configure it for interval_seconds - 1 to trigger exactly on time.
+  HAL_StatusTypeDef status = HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, interval_seconds - 1, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
 #if DEBUG_SENSOR
   if (status != HAL_OK)
   {
