@@ -8,6 +8,9 @@
 #include "main.h"
 #include "stdio.h"
 #include "pressure.h"
+#ifdef INTERFACE_BOARD_IMPLEMENTATION
+#include "interface_board.h"
+#endif
 
 float surface_pressure = SURFACE_PRESSURE;
 
@@ -143,6 +146,31 @@ uint32_t MS5837_ReadADC(uint8_t cmd)
 // Returns 1 = success, 0 = failure
 uint8_t MS5837_ReadPT_FirstOrder(float *pressure_mbar, float *temp_c)
 {
+    if (PRESSURE_SENSOR_CURRENTLY_IN_USE == SENSOR_ID_MPM281II_2BAR) {
+#ifdef INTERFACE_BOARD_IMPLEMENTATION
+        if (!Acquire_RawPressureReading_InterfaceBoard()) {
+            return 0;
+        }
+        // D1 has raw pressure code, D2 has raw temp code
+        int32_t raw_pressure = (int32_t)((uint32_t)D1 << 8) >> 8; // sign extend 24-bit
+        float voltage_mv_press = ((float)(raw_pressure - 0x800000) * 3000.0f) / (16.0f * 8388608.0f);
+
+        uint32_t raw_temp = D2 & 0x00FFFFFF;
+        float voltage_mv_temp = ((float)raw_temp * 3000.0f) / 16777216.0f;
+
+        Sensor.temperature = (int32_t)(voltage_mv_temp * 100.0f);
+        Sensor.pressure = (int32_t)(voltage_mv_press * 10.0f);
+
+        *pressure_mbar = voltage_mv_press;
+        *temp_c = voltage_mv_temp;
+        return 1;
+#else
+        *pressure_mbar = 0.0f;
+        *temp_c = 0.0f;
+        return 0;
+#endif
+    }
+
     // Read raw ADC values
     D1 = MS5837_ReadADC(CMD_CONVERT_D1);
     if (D1 == 0xFFFFFFFF) return 0;
@@ -295,22 +323,41 @@ void DebugSensor(void)
 
     if (!initialized)
     {
-        MS5837_Reset();
-        if (MS5837_ReadPROM()) {
-            initialized = 1;
-            error_count = 0;
-        } else {
-            // Handle initialization failure
-        	DebugPrint((uint8_t*)"Sensor init failed\r\n");
-
-            // Try bus recovery after multiple failures
-            if(error_count > 5) {
-            	DebugPrint((uint8_t*)"Attempting I2C bus recovery\r\n");
-                I2C_Recovery();
+        if (PRESSURE_SENSOR_CURRENTLY_IN_USE != SENSOR_ID_MPM281II_2BAR)
+        {
+            MS5837_Reset();
+            if (MS5837_ReadPROM()) {
+                initialized = 1;
                 error_count = 0;
+            } else {
+                // Handle initialization failure
+                DebugPrint((uint8_t*)"Sensor init failed\r\n");
+
+                // Try bus recovery after multiple failures
+                if(error_count > 5) {
+                    DebugPrint((uint8_t*)"Attempting I2C bus recovery\r\n");
+                    I2C_Recovery();
+                    error_count = 0;
+                }
+                error_count++;
+                return;
             }
-            error_count++;
-            return;
+        }
+        else
+        {
+#ifdef INTERFACE_BOARD_IMPLEMENTATION
+            if (INTF_Init()) {
+                initialized = 1;
+                error_count = 0;
+                DebugPrint((uint8_t*)"Interface Board detected\r\n");
+            } else {
+                DebugPrint((uint8_t*)"Interface Board not detected\r\n");
+                error_count++;
+                return;
+            }
+#else
+            initialized = 1;
+#endif
         }
     }
 
@@ -321,123 +368,84 @@ void DebugSensor(void)
 
         if (error_count > 3)
         {
-            // Reset sensor after multiple errors
             initialized = 0;
             error_count = 0;
-            MS5837_Reset();
-            HAL_Delay(100);
-            DebugPrint((uint8_t*)"Sensor reset due to errors\r\n");
+            if (PRESSURE_SENSOR_CURRENTLY_IN_USE != SENSOR_ID_MPM281II_2BAR)
+            {
+                // Reset sensor after multiple errors
+                MS5837_Reset();
+                HAL_Delay(100);
+                DebugPrint((uint8_t*)"Sensor reset due to errors\r\n");
 
-            // Also try bus recovery if reset doesn't help
-            if(HAL_GetTick() - last_reset_time < 30000)
-            { // If reset recently didn't help
-                I2C_Recovery();
+                // Also try bus recovery if reset doesn't help
+                if(HAL_GetTick() - last_reset_time < 30000)
+                { // If reset recently didn't help
+                    I2C_Recovery();
+                }
+                last_reset_time = HAL_GetTick();
             }
-            last_reset_time = HAL_GetTick();
+            else
+            {
+                DebugPrint((uint8_t*)"Interface Board read failed multiple times\r\n");
+            }
         }
         return;
     }
 
-    // Check for reasonable values
-    if (press < 0.0f || press > 50000.0f || temp < -40.0f || temp > 85.0f)
+    // Check for reasonable values (only for MS5837)
+    if (PRESSURE_SENSOR_CURRENTLY_IN_USE != SENSOR_ID_MPM281II_2BAR)
     {
-        error_count++;
-        char err_msg[64];
-        //snprintf(err_msg, sizeof(err_msg), "Invalid values: P=%.1f, T=%.1f\r\n", press, temp);
-        DebugPrint((uint8_t*)err_msg);
-
-        if (error_count > 3)
+        if (press < 0.0f || press > 50000.0f || temp < -40.0f || temp > 85.0f)
         {
-            initialized = 0;
-            error_count = 0;
-            MS5837_Reset();
-            HAL_Delay(100);
-            DebugPrint((uint8_t*)"Sensor reset due to invalid values\r\n");
+            error_count++;
+            if (error_count > 3)
+            {
+                initialized = 0;
+                error_count = 0;
+                MS5837_Reset();
+                HAL_Delay(100);
+                DebugPrint((uint8_t*)"Sensor reset due to invalid values\r\n");
+            }
+            return;
         }
-        return;
     }
 
     error_count = 0; // Reset error counter on good reading
 
-
-
-    /*
-    // Start of temporary -- for testing multi-guage GUI
-    CTD.press_i += 10;  // temporary
-    CTD.temp_i += 10;
-    CTD.cond_i += 10;
-
-    if(CTD.press_i > 150) // temporary - based on minValue / maxvalue in QML
-    {
-      CTD.press_i = 0;
-    }
-    if(CTD.temp_i > 70)
-    {
-      CTD.temp_i = 0;
-    }
-    if(CTD.cond_i > 2000)
-    {
-      CTD.cond_i = 0;
-    }
-
-    CTD.press_uc[0] = CTD.press_i & 0xFF;     // Low byte
-    CTD.press_uc[1] = (CTD.press_i >> 8) & 0xFF;  // High byte
-
-    CTD.temp_uc[0] = CTD.temp_i & 0xFF;     // Low byte
-    CTD.temp_uc[1] = (CTD.temp_i >> 8) & 0xFF;  // High byte
-
-    CTD.cond_uc[0] = CTD.cond_i & 0xFF;     // Low byte
-    CTD.cond_uc[1] = (CTD.cond_i >> 8) & 0xFF;  // High byte
-    // End of temporary -- for testing multi-guage GUI
-    */
-
-
     // Pressure to Depth (in cm) conversion, Temperature, Conductivity -- all integers
-    if(press > surface_pressure)
+    if (PRESSURE_SENSOR_CURRENTLY_IN_USE == SENSOR_ID_MPM281II_2BAR)
     {
-      CTD.depth_i = Pressure_to_Depth_cm(press, surface_pressure);  // should be CTD.depth_i
+        // Auto-tare on first good read so depth starts at 0.00m
+        static uint8_t first_read = 1;
+        if (first_read)
+        {
+            surface_pressure = press;
+            first_read = 0;
+        }
+
+        // For MPM281II (Interface Board), press and temp contain millivolt values.
+        // We scale depth by 100 so 1 mV of pressure delta displays as 1.00 meter on PC GUI.
+        float delta_mv = press - surface_pressure;
+        if (delta_mv < 0.0f) delta_mv = 0.0f;
+        CTD.depth_i = (uint16_t)(delta_mv * 100.0f);
+        CTD.temp_i = (uint16_t)(temp * 1.0f); // Temp mV scaled by 1.0 so 405 mV shows as 40.5 C on PC
     }
     else
     {
-      CTD.depth_i = 0;	// should be CTD.depth_i
+        if(press > surface_pressure)
+        {
+          CTD.depth_i = Pressure_to_Depth_cm(press, surface_pressure);  // should be CTD.depth_i
+        }
+        else
+        {
+          CTD.depth_i = 0;	// should be CTD.depth_i
+        }
+        CTD.temp_i = temp * 10;
     }
-    CTD.temp_i = temp * 10;
     CTD.cond_i = 0;
 
-    /*
-    // already done during transmission in CTD_Reading_Processed_Response() in process.h
-    CTD.press_uc[0] = CTD.press_i & 0xFF;     // Low byte
-    CTD.press_uc[1] = (CTD.press_i >> 8) & 0xFF;  // High byte
-
-    CTD.temp_uc[0] = CTD.temp_i & 0xFF;     // Low byte
-    CTD.temp_uc[1] = (CTD.temp_i >> 8) & 0xFF;  // High byte
-
-    CTD.cond_uc[0] = CTD.cond_i & 0xFF;     // Low byte
-    CTD.cond_uc[1] = (CTD.cond_i >> 8) & 0xFF;  // High byte
-    */
-
-
-    /*
-    // remove later
-    CTD.press_uc[0] = CTD.press_i & 0xFF;          // Low byte
-    CTD.press_uc[1] = (CTD.press_i >> 8) & 0xFF;   // Mid byte
-    CTD.press_uc[2] = (CTD.press_i >> 16) & 0xFF;  // Upper Mid byte
-    CTD.press_uc[3] = (CTD.press_i >> 24) & 0xFF;  // High byte
-
-    CTD.temp_uc[0] = CTD.temp_i & 0xFF;            // Low byte
-    CTD.temp_uc[1] = (CTD.temp_i >> 8) & 0xFF;     // Mid byte
-    CTD.temp_uc[2] = (CTD.temp_i >> 16) & 0xFF;    // Upper Mid byte
-    CTD.temp_uc[3] = (CTD.temp_i >> 24) & 0xFF;    // High byte
-
-    CTD.cond_uc[0] = CTD.cond_i & 0xFF;            // Low byte
-    CTD.cond_uc[1] = (CTD.cond_i >> 8) & 0xFF;     // Mid byte
-    CTD.cond_uc[2] = (CTD.cond_i >> 16) & 0xFF;    // Upper Mid byte
-    CTD.cond_uc[3] = (CTD.cond_i >> 24) & 0xFF;    // High byte
-    */
-
-
     char msg[64];
-    //snprintf(msg, sizeof(msg), "P: %.2f mbar, T: %.2f C\r\n", press, temp);
+    snprintf(msg, sizeof(msg), "P: %.2f mV, T: %.2f mV\r\n", press, temp);
     DebugPrint((uint8_t*)msg);
 }
 

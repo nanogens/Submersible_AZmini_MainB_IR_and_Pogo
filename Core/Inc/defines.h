@@ -27,7 +27,7 @@
 #define SENSOR_ID_MS5837_2BAR 0x02   // MS5837-02BA21
 #define SENSOR_ID_MPM281II_2BAR 0x03 // MPM281 II - 07 - A - 0 - L - 1 (Micro Sense)
 // IMPORTANT: Change this according to the type of pressure (and temperature) sensor in use
-#define PRESSURE_SENSOR_CURRENTLY_IN_USE SENSOR_ID_MS5837_2BAR
+#define PRESSURE_SENSOR_CURRENTLY_IN_USE SENSOR_ID_MPM281II_2BAR //SENSOR_ID_MS5837_2BAR
 
 // ============================================
 // Debug Print
@@ -201,10 +201,10 @@
 #define SENSOR_TYPE_INTERFACE_BOARD  2
 
 // Select the active sensor (change this to switch)
-#define SENSOR_TYPE  SENSOR_TYPE_TE_INTEGRATED // SENSOR_TYPE_INTERFACE_BOARD
+#define SENSOR_TYPE  SENSOR_TYPE_INTERFACE_BOARD // SENSOR_TYPE_TE_INTEGRATED
 
 // Enable Interface Board implementation (comment out to disable)
-//#define INTERFACE_BOARD_IMPLEMENTATION
+#define INTERFACE_BOARD_IMPLEMENTATION  // uncomment if Interface Board Implementation not in use
 
 // Sampling Mode
 #define TIME_CONTINUOUSLOOP 0

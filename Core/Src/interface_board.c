@@ -1,5 +1,6 @@
 #include "main.h"
 #include "interface_board.h"
+#include <stdio.h>
 
 //==============================================================================
 // Implementation

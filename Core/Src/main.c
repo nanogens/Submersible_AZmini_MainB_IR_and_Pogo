@@ -376,6 +376,14 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+#if DEBUG_SENSOR
+    static uint32_t last_print = 0;
+    if (HAL_GetTick() - last_print > 500)
+    {
+        DebugSensor();
+        last_print = HAL_GetTick();
+    }
+#endif
     if (Lpuart1.status == FILLED)
     {
         last_activity_time = HAL_GetTick(); // Reset watchdog on main thread when a valid packet is ready
