@@ -781,6 +781,9 @@ void FillPage(void)
 
 void HaltRecording(void)
 {
+	extern RTC_HandleTypeDef hrtc;
+	HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
+
 	// Commit the final active page in RAM to the EEPROM before stopping
 	if (RecordHeader.recordcount > 0)
 	{
