@@ -444,6 +444,13 @@ int main(void)
      */
     if (RecordState.started == RECORDING_ONGOING)
     {
+        // If the hardware timer is stopped (e.g. woke up from sleep but stayed awake
+        // due to active PC comms), restart it to continue sampling while awake.
+        if ((TIM2->CR1 & TIM_CR1_CEN) == 0)
+        {
+            StartRecordingTimer();
+        }
+
         if (HAL_GetTick() - last_activity_time > 5000)
         {
             uint32_t elapsed_since_write = HAL_GetTick() - last_write_time;
