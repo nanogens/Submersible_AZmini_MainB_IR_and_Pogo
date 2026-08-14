@@ -332,6 +332,9 @@ extern struct PageData1 PageData;
 struct DownloadPageData1 {
   uint8_t pagedata_r[PAGEDATA_R_ARRAY];
   uint8_t pagedata_rq[LOGTRANSMITDATA_QUADRANTS_ARRAY][LOGTRANSMITDATA_QUADRANTBYTES_ARRAY];
+  uint8_t pagedata_w_snapshot[PAGEDATA_W_ARRAY];
+  uint32_t active_pageaddress_snapshot;
+  uint8_t snapshot_taken;
 };
 extern struct DownloadPageData1 DownloadBuffer;
 

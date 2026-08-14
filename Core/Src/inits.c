@@ -337,6 +337,12 @@ void Inits_Var(void)
       DownloadBuffer.pagedata_rq[i][j] = 0;
     }
   }
+  for(i = 0; i < PAGEDATA_W_ARRAY; i++)
+  {
+    DownloadBuffer.pagedata_w_snapshot[i] = 0xFF;
+  }
+  DownloadBuffer.active_pageaddress_snapshot = 0xFFFFFFFF;
+  DownloadBuffer.snapshot_taken = 0;
 
 
   RecordState.started = RECORDING_NOTSTARTED;

@@ -100,6 +100,7 @@ extern void SaveDownloadPagetoMemory(uint32_t sector, uint8_t page);
 
 // Record Count Ledger
 void Update_ShowFilesQuadrant(void);
+void TakeDownloadSnapshot(void);
 
 void RTC_ReadTime(void);
 uint8_t Send_Data(uint8_t *data, uint16_t length);

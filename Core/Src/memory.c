@@ -1093,6 +1093,16 @@ void SaveRetrievedPagetoMemory(uint32_t sector, uint8_t page, uint8_t breakup)
   }
 }
 
+void TakeDownloadSnapshot(void)
+{
+  DownloadBuffer.active_pageaddress_snapshot = RecordState.pageaddress;
+  memcpy(DownloadBuffer.pagedata_w_snapshot, PageData.pagedata_w, PAGEDATA_W_ARRAY);
+  DownloadBuffer.snapshot_taken = 1;
+#if DEBUG_SENSOR
+  SendString((uint8_t*)"[DEBUG] TakeDownloadSnapshot: Snapshot locked active page and RAM buffer.\r\n");
+#endif
+}
+
 void SaveDownloadPagetoMemory(uint32_t sector, uint8_t page)
 {
   if ((sector < TOTAL_SECTORS) && (page < PAGES_PER_SECTOR)) // protection
@@ -1105,15 +1115,15 @@ void SaveDownloadPagetoMemory(uint32_t sector, uint8_t page)
       DownloadBuffer.pagedata_r[i] = 0xFF;
     }
 
-    if (RecordState.started != RECORDING_NOTSTARTED && test_address == RecordState.pageaddress)
+    if (RecordState.started != RECORDING_NOTSTARTED && DownloadBuffer.snapshot_taken && test_address == DownloadBuffer.active_pageaddress_snapshot)
     {
-      // Serve data directly from the active RAM write buffer for the currently recording page
+      // Serve data directly from the frozen snapshot buffer for the recording page at start of download
       for (int i = 0; i < PAGEDATA_R_ARRAY; i++)
       {
-        DownloadBuffer.pagedata_r[i] = PageData.pagedata_w[i];
+        DownloadBuffer.pagedata_r[i] = DownloadBuffer.pagedata_w_snapshot[i];
       }
 #if DEBUG_SENSOR
-      SendString((uint8_t*)"[DEBUG] (Download) Served active page from RAM buffer bypass!\r\n");
+      SendString((uint8_t*)"[DEBUG] (Download) Served active page from RAM snapshot bypass!\r\n");
 #endif
     }
     else

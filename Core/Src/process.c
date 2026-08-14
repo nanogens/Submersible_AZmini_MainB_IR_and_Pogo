@@ -117,13 +117,21 @@ void ProcessMsg(void)
     	        break;
 
       case LOG_TRANSMITDATA_SET_MSGID:
-    	        Log_TransmitData_Set();
-    	        if(LogTransmitData.quadrant == 0)  // breakup of page into 4 quadrants needs to be done only once (on the 0th quadrant)
-    	        {
-    	          SaveDownloadPagetoMemory((LogTransmitData.sector[1] << 8) + LogTransmitData.sector[0], LogTransmitData.page); // sector 3 onwards, page 0 to 7 (in the case of the first file slot for instance)
-    	        }
-    	        Log_TransmitData_Resp();
-    	        break;
+     	        Log_TransmitData_Set();
+     	        if(LogTransmitData.page == 0 && LogTransmitData.quadrant == 0)
+     	        {
+     	          DownloadBuffer.snapshot_taken = 0;
+     	        }
+     	        if(DownloadBuffer.snapshot_taken == 0)
+     	        {
+     	          TakeDownloadSnapshot();
+     	        }
+     	        if(LogTransmitData.quadrant == 0)  // breakup of page into 4 quadrants needs to be done only once (on the 0th quadrant)
+     	        {
+     	          SaveDownloadPagetoMemory((LogTransmitData.sector[1] << 8) + LogTransmitData.sector[0], LogTransmitData.page); // sector 3 onwards, page 0 to 7 (in the case of the first file slot for instance)
+     	        }
+     	        Log_TransmitData_Resp();
+     	        break;
 
       case CTD_READINGS_TARE_SENSOR_SET_MSGID:
     	        CTD_Readings_Tare_Sensor_Set();
