@@ -469,20 +469,29 @@ int main(void)
     {
         recording_timer_expired = 0;
 
-        // If already powered (woke up early), ensure at least 25 ms has elapsed since power on.
+        // If already powered (woke up early), ensure adequate startup delay for sensors to stabilize.
         if (HAL_GPIO_ReadPin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin) == GPIO_PIN_RESET)
         {
             HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
             HAL_SPI_MspInit(&hspi1);
             HAL_I2C_MspInit(&hi2c1);
+#if PRESSURE_SENSOR_CURRENTLY_IN_USE == SENSOR_ID_MPM281II_2BAR
+            HAL_Delay(750);
+#else
             HAL_Delay(25);
+#endif
         }
         else
         {
             uint32_t elapsed = HAL_GetTick() - last_power_on_time;
-            if (elapsed < 25)
+#if PRESSURE_SENSOR_CURRENTLY_IN_USE == SENSOR_ID_MPM281II_2BAR
+            uint32_t required_delay = 750;
+#else
+            uint32_t required_delay = 25;
+#endif
+            if (elapsed < required_delay)
             {
-                HAL_Delay(25 - elapsed);
+                HAL_Delay(required_delay - elapsed);
             }
         }
 

@@ -883,8 +883,12 @@ void Exit_Recording_Sleep(void)
       // 2. Disable RTC Wakeup Timer to prevent spurious wakeups
       HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
 
-      // Wait 20 ms more (25 ms total) for the sensor voltages to fully stabilize before sampling
+      // Wait more (750 ms total for Interface board, 25 ms total for TE sensor) for the sensor voltages to fully stabilize before sampling
+#if PRESSURE_SENSOR_CURRENTLY_IN_USE == SENSOR_ID_MPM281II_2BAR
+      HAL_Delay(745);
+#else
       HAL_Delay(20);
+#endif
   }
 
   // Clear pending UART flags and restart receiver interrupts
