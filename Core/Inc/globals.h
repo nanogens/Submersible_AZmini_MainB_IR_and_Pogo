@@ -329,6 +329,12 @@ struct PageData1 {
 };
 extern struct PageData1 PageData;
 
+struct DownloadPageData1 {
+  uint8_t pagedata_r[PAGEDATA_R_ARRAY];
+  uint8_t pagedata_rq[LOGTRANSMITDATA_QUADRANTS_ARRAY][LOGTRANSMITDATA_QUADRANTBYTES_ARRAY];
+};
+extern struct DownloadPageData1 DownloadBuffer;
+
 struct Sensor1 {
   uint32_t temperature;
   uint32_t pressure;

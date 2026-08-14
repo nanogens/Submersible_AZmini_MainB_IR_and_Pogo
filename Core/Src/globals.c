@@ -38,6 +38,8 @@ struct RecordStatePrev1 RecordStatePrev;
 struct RecordHeader1 RecordHeader;
 struct RecordHeaderPrev1 RecordHeaderPrev;
 struct PageData1 PageData;
+struct DownloadPageData1 DownloadBuffer;
+
 struct Sensor1 Sensor;
 struct LogReadSpecificFile1 LogReadSpecificFile;
 struct LogTransmitData1 LogTransmitData;

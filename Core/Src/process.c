@@ -106,13 +106,13 @@ void ProcessMsg(void)
 
       // Logging
       case LOG_SHOWFILES_QUERY_MSGID:  // Retrieve basic info on all files
-    	        SaveRetrievedPagetoMemory(SHOWFILES_SECTOR, SHOWFILES_PAGE, BREAK_INTO_QUADRANT_YES); // sector 1, page 0
+    	        SaveDownloadPagetoMemory(SHOWFILES_SECTOR, SHOWFILES_PAGE); // sector 1, page 0
     	        Log_ShowFiles_Resp();
     	        break;
 
       case LOG_READSPECIFICFILE_SET_MSGID:
     	        Log_ReadSpecificFile_Set();
-    	        SaveRetrievedPagetoMemory(READSPECIFICFILE_SECTOR, LogReadSpecificFile.whichfile, BREAK_INTO_QUADRANT_YES); // sector 2, page 0,1,2,3
+    	        SaveDownloadPagetoMemory(READSPECIFICFILE_SECTOR, LogReadSpecificFile.whichfile); // sector 2, page 0,1,2,3
     	        Log_ReadSpecificFile_Resp();
     	        break;
 
@@ -120,7 +120,7 @@ void ProcessMsg(void)
     	        Log_TransmitData_Set();
     	        if(LogTransmitData.quadrant == 0)  // breakup of page into 4 quadrants needs to be done only once (on the 0th quadrant)
     	        {
-    	          SaveRetrievedPagetoMemory((LogTransmitData.sector[1] << 8) + LogTransmitData.sector[0], LogTransmitData.page, BREAK_INTO_QUADRANT_YES); // sector 3 onwards, page 0 to 7 (in the case of the first file slot for instance)
+    	          SaveDownloadPagetoMemory((LogTransmitData.sector[1] << 8) + LogTransmitData.sector[0], LogTransmitData.page); // sector 3 onwards, page 0 to 7 (in the case of the first file slot for instance)
     	        }
     	        Log_TransmitData_Resp();
     	        break;
@@ -580,31 +580,31 @@ void Log_ShowFiles_Resp(void)
   SendHeader(LOG_SHOWFILES_RESP_MSGLGT, LOG_SHOWFILES_RESP_MSGID);
   for(i = 0; i < LOGTRANSMITDATA_QUADRANTS_ARRAY; i++)
   {
-    SendByte(PageData.pagedata_rq[i][0]); // Reserved
-    SendByte(PageData.pagedata_rq[i][1]); // File Index
+    SendByte(DownloadBuffer.pagedata_rq[i][0]); // Reserved
+    SendByte(DownloadBuffer.pagedata_rq[i][1]); // File Index
 
-    SendByte(PageData.pagedata_rq[i][2]); // File Name 0
-    SendByte(PageData.pagedata_rq[i][3]); // File Name 1
-    SendByte(PageData.pagedata_rq[i][4]); // File Name 2
-    SendByte(PageData.pagedata_rq[i][5]); // File Name 3
-    SendByte(PageData.pagedata_rq[i][6]); // File Name 4
-    SendByte(PageData.pagedata_rq[i][7]); // File Name 5
-    SendByte(PageData.pagedata_rq[i][8]); // File Name 6
-    SendByte(PageData.pagedata_rq[i][9]); // File Name 7
+    SendByte(DownloadBuffer.pagedata_rq[i][2]); // File Name 0
+    SendByte(DownloadBuffer.pagedata_rq[i][3]); // File Name 1
+    SendByte(DownloadBuffer.pagedata_rq[i][4]); // File Name 2
+    SendByte(DownloadBuffer.pagedata_rq[i][5]); // File Name 3
+    SendByte(DownloadBuffer.pagedata_rq[i][6]); // File Name 4
+    SendByte(DownloadBuffer.pagedata_rq[i][7]); // File Name 5
+    SendByte(DownloadBuffer.pagedata_rq[i][8]); // File Name 6
+    SendByte(DownloadBuffer.pagedata_rq[i][9]); // File Name 7
 
-    SendByte(PageData.pagedata_rq[i][10]); // File Length 0
-    SendByte(PageData.pagedata_rq[i][11]); // File Length 1
-    SendByte(PageData.pagedata_rq[i][12]); // File Length 2
-    SendByte(PageData.pagedata_rq[i][13]); // File Length 3
+    SendByte(DownloadBuffer.pagedata_rq[i][10]); // File Length 0
+    SendByte(DownloadBuffer.pagedata_rq[i][11]); // File Length 1
+    SendByte(DownloadBuffer.pagedata_rq[i][12]); // File Length 2
+    SendByte(DownloadBuffer.pagedata_rq[i][13]); // File Length 3
 
-    SendByte(PageData.pagedata_rq[i][14]); // File Date 0
-    SendByte(PageData.pagedata_rq[i][15]); // File Date 1
-    SendByte(PageData.pagedata_rq[i][16]); // File Date 2
-    SendByte(PageData.pagedata_rq[i][17]); // File Date 3
-    SendByte(PageData.pagedata_rq[i][18]); // File Date 4
-    SendByte(PageData.pagedata_rq[i][19]); // File Date 5
-    SendByte(PageData.pagedata_rq[i][20]); // File Date 6
-    SendByte(PageData.pagedata_rq[i][21]); // File Date 7
+    SendByte(DownloadBuffer.pagedata_rq[i][14]); // File Date 0
+    SendByte(DownloadBuffer.pagedata_rq[i][15]); // File Date 1
+    SendByte(DownloadBuffer.pagedata_rq[i][16]); // File Date 2
+    SendByte(DownloadBuffer.pagedata_rq[i][17]); // File Date 3
+    SendByte(DownloadBuffer.pagedata_rq[i][18]); // File Date 4
+    SendByte(DownloadBuffer.pagedata_rq[i][19]); // File Date 5
+    SendByte(DownloadBuffer.pagedata_rq[i][20]); // File Date 6
+    SendByte(DownloadBuffer.pagedata_rq[i][21]); // File Date 7
   }
   SendByte(Lpuart1.crcsend);
 }
@@ -640,7 +640,7 @@ void Log_ReadSpecificFile_Resp(void)
             txBuffer[idx++] = LOG_READSPECIFICFILE_RESP_MSGID;
             txBuffer[idx++] = LogReadSpecificFile.whichfile;
             txBuffer[idx++] = quadrant;
-            memcpy(&txBuffer[idx], PageData.pagedata_rq[quadrant], 128);
+            memcpy(&txBuffer[idx], DownloadBuffer.pagedata_rq[quadrant], 128);
             idx += 128;
 
             // Calculate CRC
@@ -691,7 +691,7 @@ void Log_TransmitData_Resp(void)
     SendByte(LogTransmitData.quadrant);
     for(uint8_t i = 0; i < LOGTRANSMITDATA_QUADRANTBYTES_ARRAY; i++)  // 128 bytes
     {
-        SendByte(PageData.pagedata_rq[LogTransmitData.quadrant][i]);
+        SendByte(DownloadBuffer.pagedata_rq[LogTransmitData.quadrant][i]);
     }
     SendByte(Lpuart1.crcsend);
 }

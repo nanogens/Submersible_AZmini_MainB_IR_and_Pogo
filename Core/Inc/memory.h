@@ -95,6 +95,8 @@ void HaltRecording(void);
 void PrintVar(uint8_t var);
 extern void PrintOutRecord(uint32_t sector, uint8_t page);
 extern void SaveRetrievedPagetoMemory(uint32_t sector, uint8_t page, uint8_t breakup);
+extern void SaveDownloadPagetoMemory(uint32_t sector, uint8_t page);
+
 
 // Record Count Ledger
 void Update_ShowFilesQuadrant(void);

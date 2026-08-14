@@ -326,6 +326,19 @@ void Inits_Var(void)
     }
   }
 
+  for(i = 0; i < PAGEDATA_R_ARRAY; i++)
+  {
+	DownloadBuffer.pagedata_r[i] = 0;
+  }
+  for(i = 0; i < LOGTRANSMITDATA_QUADRANTS_ARRAY; i++)
+  {
+    for(j = 0; j < LOGTRANSMITDATA_QUADRANTBYTES_ARRAY; j++)
+    {
+      DownloadBuffer.pagedata_rq[i][j] = 0;
+    }
+  }
+
+
   RecordState.started = RECORDING_NOTSTARTED;
   RecordState.saverecord = RECORDSTATE_DONOTHING; // tells memory FILLPAGE routine what to do (WRITEPAGE, UPDATEPAGE) while recording.
   RecordState.pageaddress = 0;        //

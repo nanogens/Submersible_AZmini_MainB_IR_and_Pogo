@@ -1093,6 +1093,58 @@ void SaveRetrievedPagetoMemory(uint32_t sector, uint8_t page, uint8_t breakup)
   }
 }
 
+void SaveDownloadPagetoMemory(uint32_t sector, uint8_t page)
+{
+  if ((sector < TOTAL_SECTORS) && (page < PAGES_PER_SECTOR)) // protection
+  {
+    uint32_t test_address = (BYTES_PER_SECTOR * sector) + (PAGEDATA_R_ARRAY * page);
+
+    // Clear the download read array to 0xFF
+    for (int i = 0; i < PAGEDATA_R_ARRAY; i++)
+    {
+      DownloadBuffer.pagedata_r[i] = 0xFF;
+    }
+
+    if (RecordState.started != RECORDING_NOTSTARTED && test_address == RecordState.pageaddress)
+    {
+      // Serve data directly from the active RAM write buffer for the currently recording page
+      for (int i = 0; i < PAGEDATA_R_ARRAY; i++)
+      {
+        DownloadBuffer.pagedata_r[i] = PageData.pagedata_w[i];
+      }
+#if DEBUG_SENSOR
+      SendString((uint8_t*)"[DEBUG] (Download) Served active page from RAM buffer bypass!\r\n");
+#endif
+    }
+    else
+    {
+      Mem_ReadData(test_address, DownloadBuffer.pagedata_r, PAGEDATA_R_ARRAY);
+#if DEBUG_SENSOR
+      char dbg_msg[128];
+      sprintf(dbg_msg, "[DEBUG] (Download) Read page from EEPROM. test_address: %lu, started: %d, pageaddress: %lu\r\n",
+              test_address, RecordState.started, RecordState.pageaddress);
+      SendString((uint8_t*)dbg_msg);
+#endif
+    }
+
+    // Always break the page up into 128 byte quadrants for the download buffer
+    for(int q = 0; q < LOGTRANSMITDATA_QUADRANTS_ARRAY; q++)
+    {
+      for(int b = 0; b < LOGTRANSMITDATA_QUADRANTBYTES_ARRAY; b++)
+      {
+        DownloadBuffer.pagedata_rq[q][b] = DownloadBuffer.pagedata_r[(q * BYTES_PER_QUADRANT) + b];
+      }
+    }
+  }
+  else
+  {
+#if DEBUG_SENSOR
+	SendString((uint8_t*)"\nSaveDownloadPagetoMemory: sector or page value exceeds limits!");
+#endif
+  }
+}
+
+
 // Used for printing variables for debugging
 void PrintVar(uint8_t var)
 {
