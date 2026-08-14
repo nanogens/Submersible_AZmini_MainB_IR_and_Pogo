@@ -12,16 +12,36 @@ uint8_t INTF_Read24Bit(uint8_t reg, int32_t *value)
 {
     uint8_t tx[1] = {reg};
     uint8_t rx[3] = {0};
+    HAL_StatusTypeDef status;
 
     // Send register address
-    if (HAL_I2C_Master_Transmit(&hi2c1, INTF_BOARD_I2C_ADDR_HAL, tx, 1, 100) != HAL_OK)
+    status = HAL_I2C_Master_Transmit(&hi2c1, INTF_BOARD_I2C_ADDR_HAL, tx, 1, 100);
+    if (status != HAL_OK)
     {
+#if DEBUG_I2C
+        /* Diagnostic Log:
+         * - status: HAL Status (1 = HAL_ERROR, 2 = HAL_BUSY, 3 = HAL_TIMEOUT)
+         * - State: HAL I2C driver State (0 = RESET/Uninitialized, 0x20 = READY)
+         * - ISR: Hardware EXTI and status register (Bit 15 is BUSY flag)
+         */
+        char dbg_msg[128];
+        sprintf(dbg_msg, "[DEBUG] Master Tx Fail! status: %d, I2C State: %d, ISR: 0x%08lx\r\n", 
+                status, hi2c1.State, hi2c1.Instance->ISR);
+        SendString((uint8_t*)dbg_msg);
+#endif
         return 0;
     }
 
     // Read 3 bytes
-    if (HAL_I2C_Master_Receive(&hi2c1, INTF_BOARD_I2C_ADDR_HAL, rx, 3, 100) != HAL_OK)
+    status = HAL_I2C_Master_Receive(&hi2c1, INTF_BOARD_I2C_ADDR_HAL, rx, 3, 100);
+    if (status != HAL_OK)
     {
+#if DEBUG_I2C
+        char dbg_msg[128];
+        sprintf(dbg_msg, "[DEBUG] Master Rx Fail! status: %d, I2C State: %d, ISR: 0x%08lx\r\n", 
+                status, hi2c1.State, hi2c1.Instance->ISR);
+        SendString((uint8_t*)dbg_msg);
+#endif
         return 0;
     }
 
@@ -36,20 +56,27 @@ uint8_t INTF_Init(void)
 {
     uint8_t tx[1] = {INTF_REG_DEVICE_ID};
     uint8_t rx[1] = {0};
-    char msg[64];
+    char msg[128];
+    HAL_StatusTypeDef status;
 
     // Send register address
-    if (HAL_I2C_Master_Transmit(&hi2c1, INTF_BOARD_I2C_ADDR_HAL, tx, 1, 100) != HAL_OK) {
-#if DEBUG_SENSOR
-    	SendString((uint8_t*)"Transmit failed\r\n");
+    status = HAL_I2C_Master_Transmit(&hi2c1, INTF_BOARD_I2C_ADDR_HAL, tx, 1, 100);
+    if (status != HAL_OK) {
+#if DEBUG_I2C
+        sprintf(msg, "[DEBUG] INTF_Init Tx Fail! status: %d, I2C State: %d, ISR: 0x%08lx\r\n",
+                status, hi2c1.State, hi2c1.Instance->ISR);
+        SendString((uint8_t*)msg);
 #endif
         return 0;
     }
 
     // Read device ID
-    if (HAL_I2C_Master_Receive(&hi2c1, INTF_BOARD_I2C_ADDR_HAL, rx, 1, 100) != HAL_OK) {
-#if DEBUG_SENSOR
-        SendString((uint8_t*)"Receive failed\r\n");
+    status = HAL_I2C_Master_Receive(&hi2c1, INTF_BOARD_I2C_ADDR_HAL, rx, 1, 100);
+    if (status != HAL_OK) {
+#if DEBUG_I2C
+        sprintf(msg, "[DEBUG] INTF_Init Rx Fail! status: %d, I2C State: %d, ISR: 0x%08lx\r\n",
+                status, hi2c1.State, hi2c1.Instance->ISR);
+        SendString((uint8_t*)msg);
 #endif
         return 0;
     }

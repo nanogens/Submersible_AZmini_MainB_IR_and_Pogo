@@ -34,4 +34,5 @@ void Enter_Recording_Sleep(uint32_t interval_seconds);
 void Exit_Recording_Sleep(void);
 uint32_t Get_Sampling_Interval_Seconds(void);
 
+
 #endif /* INC_MISC_H_ */

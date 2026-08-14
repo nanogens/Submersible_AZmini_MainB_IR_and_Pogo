@@ -928,8 +928,11 @@ void Exit_Recording_Sleep(void)
   }
 #endif
 
-  // Reset inactivity watchdog timer so the CPU has 10 seconds to communicate before sleeping again
-  last_activity_time = HAL_GetTick();
+  // Reset inactivity watchdog timer only if the wakeup was NOT caused by the RTC timer (i.e. it was a PC query)
+  if (!recording_timer_expired)
+  {
+      last_activity_time = HAL_GetTick();
+  }
 
   is_sleeping = false;
 }

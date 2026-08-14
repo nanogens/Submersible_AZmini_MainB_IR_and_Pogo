@@ -88,6 +88,7 @@ volatile uint8_t ignore_echo_usart2;
 volatile uint32_t last_activity_time;
 volatile bool is_sleeping = false;
 extern volatile uint32_t last_power_on_time;
+volatile uint32_t last_write_time = 0; /* Timestamp of the last sample write to EEPROM */
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -179,7 +180,6 @@ void HAL_IRDA_RxCpltCallback(IRDA_HandleTypeDef *hirda)
 {
     if(hirda->Instance == USART2)
     {
-        last_activity_time = HAL_GetTick();
         IncomingByteCheck();
         HAL_IRDA_Receive_IT(hirda, &rx_buffer[0], 1);
     }
@@ -210,7 +210,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *hlpuart1)
 {
     if(hlpuart1->Instance == LPUART1)
     {
-        last_activity_time = HAL_GetTick();
         IncomingByteCheck();
         HAL_UART_Receive_IT(hlpuart1, &rx_buffer[0], 1);
     }
@@ -228,7 +227,6 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == LPUART1)
     {
-        last_activity_time = HAL_GetTick();
         DE_RE_DISABLE();
         tx_busy = 0;
         tx_index = 0;
@@ -436,6 +434,42 @@ int main(void)
         }
     }
 
+    /* 
+     * Ongoing Recording Sleep Watchdog (Option 1):
+     * If the PC is actively communicating with the instrument (e.g. streaming live data or
+     * downloading logs), we temporarily stay awake to prevent peripheral power cuts mid-transaction.
+     * Once the PC stops talking to us (5 seconds of inactivity), this watchdog immediately
+     * calculates the remaining time in the current recording cycle and puts the instrument back
+     * to sleep for the remaining duration.
+     */
+    if (RecordState.started == RECORDING_ONGOING)
+    {
+        if (HAL_GetTick() - last_activity_time > 5000)
+        {
+            uint32_t elapsed_since_write = HAL_GetTick() - last_write_time;
+            uint32_t rec_interval = Get_Sampling_Interval_Seconds();
+            uint32_t rec_interval_ms = rec_interval * 1000;
+            
+            if (rec_interval_ms > elapsed_since_write)
+            {
+                uint32_t remaining_ms = rec_interval_ms - elapsed_since_write;
+                // Only enter Stop Mode if we have more than 5 seconds remaining until the next write
+                if (remaining_ms > 5000)
+                {
+                    uint32_t sleep_duration = remaining_ms / 1000;
+#if DEBUG_SENSOR
+                    char dbg[64];
+                    sprintf(dbg, "[DEBUG] Ongoing Sleep Watchdog: Sleeping for %lu s\r\n", (unsigned long)sleep_duration);
+                    SendString((uint8_t*)dbg);
+                    HAL_Delay(50);
+#endif
+                    HAL_TIM_Base_Stop_IT(&htim2);
+                    Enter_Recording_Sleep(sleep_duration);
+                }
+            }
+        }
+    }
+
     if (!is_timer_triggered && ApplyRecordingPlan.run == PLAN_RUN_YES)
     {
         if (IsTargetTimeReached())
@@ -565,15 +599,31 @@ int main(void)
                     sprintf(dbg, "[DEBUG] Sampling interval: %lu s\r\n", (unsigned long)rec_interval);
                     SendString((uint8_t*)dbg);
 #endif
+                    last_write_time = HAL_GetTick(); // Record the timestamp of this sample write
+                    
                     if (rec_interval >= 10)
                     {
+                        /*
+                         * Watchdog Guard: Skip entering sleep immediately if the PC is actively
+                         * communicating with the instrument (e.g. download or stream in progress).
+                         * We only enter sleep if there has been no PC activity for at least 5 seconds.
+                         */
+                        if (HAL_GetTick() - last_activity_time > 5000)
+                        {
 #if DEBUG_SENSOR
-                        SendString((uint8_t*)"[DEBUG] Calling Enter_Recording_Sleep...\r\n");
+                            SendString((uint8_t*)"[DEBUG] Calling Enter_Recording_Sleep...\r\n");
 #endif
-                        HAL_TIM_Base_Stop_IT(&htim2);
-                        Enter_Recording_Sleep(rec_interval);
+                            HAL_TIM_Base_Stop_IT(&htim2);
+                            Enter_Recording_Sleep(rec_interval);
 #if DEBUG_SENSOR
-                        SendString((uint8_t*)"[DEBUG] Exited Enter_Recording_Sleep!\r\n");
+                            SendString((uint8_t*)"[DEBUG] Exited Enter_Recording_Sleep!\r\n");
+#endif
+                        }
+#if DEBUG_SENSOR
+                        else
+                        {
+                            SendString((uint8_t*)"[DEBUG] Stay awake during active PC comms\r\n");
+                        }
 #endif
                     }
                 }
