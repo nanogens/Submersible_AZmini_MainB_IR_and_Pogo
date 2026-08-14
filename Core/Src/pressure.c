@@ -346,6 +346,30 @@ void DebugSensor(void)
         else
         {
 #ifdef INTERFACE_BOARD_IMPLEMENTATION
+            extern volatile uint32_t last_power_on_time;
+            
+            /* Wakeup Timing Guard:
+             * Ensures the Interface Board has had at least 750 ms to power up and stabilize SCL/SDA
+             * lines before the Main Board tries to communicate with it.
+             */
+            uint32_t elapsed = HAL_GetTick() - last_power_on_time;
+            if (elapsed < 750)
+            {
+                HAL_Delay(750 - elapsed);
+            }
+            
+            /* Driver State Guard:
+             * If I2C was de-initialized for sleep (putting it in RESET state), force-initialize it
+             * here now that SCL/SDA are stabilized and pulled high.
+             */
+            if (hi2c1.State == HAL_I2C_STATE_RESET)
+            {
+#if DEBUG_I2C
+                SendString((uint8_t*)"[DEBUG] DebugSensor: Force initializing hi2c1\r\n");
+#endif
+                HAL_I2C_Init(&hi2c1);
+            }
+
             if (INTF_Init()) {
                 initialized = 1;
                 error_count = 0;
@@ -507,6 +531,18 @@ uint8_t MS5837_InitCalibration(void)
 //==============================================================================
 uint8_t Acquire_RawPressureReading_TEIntegrated(void)
 {
+    /* Driver State Guard:
+     * If I2C was de-initialized for sleep (putting it in RESET state), force-initialize it
+     * here now that SCL/SDA are stabilized and pulled high.
+     */
+    if (hi2c1.State == HAL_I2C_STATE_RESET)
+    {
+#if DEBUG_I2C
+        SendString((uint8_t*)"[DEBUG] Acquire_TE: Force initializing hi2c1\r\n");
+#endif
+        HAL_I2C_Init(&hi2c1);
+    }
+
     // Initialize calibration once or if cleared (C[1] == 0)
     if (C[1] == 0) {
         if (MS5837_InitCalibration()) {
@@ -547,11 +583,39 @@ uint8_t Acquire_RawPressureReading_TEIntegrated(void)
 #ifdef INTERFACE_BOARD_IMPLEMENTATION
 uint8_t Acquire_RawPressureReading_InterfaceBoard(void)
 {
+    extern volatile uint32_t last_power_on_time;
+
     static uint8_t initialized = 0;
     static uint8_t detected = 0;
     int32_t pressure_code = 0;
     int32_t temp_code = 0;
     int32_t avdd_code = 0;
+    uint32_t elapsed;
+
+    // Ensure the Interface Board has had adequate stabilization time since the load switch was enabled.
+    elapsed = HAL_GetTick() - last_power_on_time;
+
+#if DEBUG_I2C
+    char dbg_msg[128];
+    sprintf(dbg_msg, "[DEBUG] Acquire start: elapsed=%lu, State=%d\r\n", elapsed, hi2c1.State);
+    SendString((uint8_t*)dbg_msg);
+#endif
+
+    if (elapsed < 750)
+    {
+        HAL_Delay(750 - elapsed);
+    }
+
+    /* Force re-initialization if the driver was left de-initialized during sleep.
+     * This prevents HAL_BUSY errors caused by SCL/SDA analog state on wakeup.
+     */
+    if (hi2c1.State == HAL_I2C_STATE_RESET)
+    {
+#if DEBUG_I2C
+        SendString((uint8_t*)"[DEBUG] Guard triggered: calling HAL_I2C_Init\r\n");
+#endif
+        HAL_I2C_Init(&hi2c1);
+    }
 
     // Initialize Interface Board once
     if (!initialized) {

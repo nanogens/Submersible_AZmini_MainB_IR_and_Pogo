@@ -6,6 +6,22 @@
 // FUNCTION DEFINITIONS =====================================
 
 // Basic SPI Functions
+void MEM_CS_ENABLE_WithInit(void)
+{
+    extern SPI_HandleTypeDef hspi1;
+    
+    /* Fallback SPI Driver State Guard:
+     * If the SPI peripheral is currently in the RESET state (e.g. after waking up from Stop Mode
+     * where we call HAL_SPI_DeInit to isolate the lines), automatically re-initialize it here
+     * before we assert CS and attempt any communication.
+     */
+    if (hspi1.State == HAL_SPI_STATE_RESET)
+    {
+        HAL_SPI_Init(&hspi1);
+    }
+    HAL_GPIO_WritePin(CS_MEM_0_BAR_GPIO_Port, CS_MEM_0_BAR_Pin, GPIO_PIN_RESET);
+}
+
 uint8_t SPI_ReadRegister(uint8_t reg)
 {
     uint8_t rx_data[2] = {0};
@@ -236,7 +252,7 @@ void ByteToHex(uint8_t byte, uint8_t* hexStr)
 
 void SendString(uint8_t* str)
 {
-#if DEBUG_SENSOR
+#if DEBUG_SENSOR || DEBUG_I2C
     uint16_t len = 0;
     while(str[len] != '\0') len++;
 

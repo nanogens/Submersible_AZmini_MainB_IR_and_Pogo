@@ -473,13 +473,16 @@ int main(void)
         if (HAL_GPIO_ReadPin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin) == GPIO_PIN_RESET)
         {
             HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_SET);
+            last_power_on_time = HAL_GetTick();
             HAL_SPI_MspInit(&hspi1);
+            HAL_SPI_Init(&hspi1);
             HAL_I2C_MspInit(&hi2c1);
 #if PRESSURE_SENSOR_CURRENTLY_IN_USE == SENSOR_ID_MPM281II_2BAR
             HAL_Delay(750);
 #else
             HAL_Delay(25);
 #endif
+            HAL_I2C_Init(&hi2c1); // Reinitialize registers and state machine after stabilization!
         }
         else
         {

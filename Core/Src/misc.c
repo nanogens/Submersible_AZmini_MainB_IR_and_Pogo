@@ -616,7 +616,19 @@ void Set_REC_START_Pin_As_Interrupt(void)
 
 void Enter_Deep_Sleep(void)
 {
+  extern I2C_HandleTypeDef hi2c1;
+  extern SPI_HandleTypeDef hspi1;
   is_sleeping = true;
+
+  // De-initialize and put I2C/SPI pins to high impedance before shutting off power
+  HAL_I2C_DeInit(&hi2c1);
+  HAL_SPI_DeInit(&hspi1);
+
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_9 | GPIO_PIN_10;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   // 1. Shut off the load switch first to power down sensors and EEPROM
   HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_RESET);
@@ -629,13 +641,6 @@ void Enter_Deep_Sleep(void)
   __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
   HAL_NVIC_ClearPendingIRQ(EXTI4_15_IRQn);
   HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
-
-  // 3. Put SPI and I2C pins into Analog No-Pull mode to prevent back-feeding current
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_9 | GPIO_PIN_10;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   // Clear pending EXTI line flags again to be absolutely sure
   __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
@@ -688,8 +693,9 @@ void Exit_Deep_Sleep(void)
   // Wait 20 ms more (25 ms total) for the sensors and transceiver voltages to fully stabilize
   HAL_Delay(20);
 
-  // 4. Re-initialize SPI1 and I2C1 pin mappings
+  // 4. Re-initialize SPI1 and I2C1 pin mappings and peripherals
   HAL_SPI_MspInit(&hspi1);
+  HAL_SPI_Init(&hspi1);
   HAL_I2C_MspInit(&hi2c1);
 
   // 5. Clear pending UART errors & flush RX data register, then restart RX
@@ -784,6 +790,18 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   HAL_Delay(50);
 #endif
 
+  // De-initialize and put I2C/SPI pins to high impedance before shutting off power
+  extern I2C_HandleTypeDef hi2c1;
+  extern SPI_HandleTypeDef hspi1;
+  HAL_I2C_DeInit(&hi2c1);
+  HAL_SPI_DeInit(&hspi1);
+
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_9 | GPIO_PIN_10;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   // 1. Shut off the load switch first to power down sensors and EEPROM
   HAL_GPIO_WritePin(PWRDIST_GEN_PWR_EN_GPIO_Port, PWRDIST_GEN_PWR_EN_Pin, GPIO_PIN_RESET);
 
@@ -806,13 +824,6 @@ void Enter_Recording_Sleep(uint32_t interval_seconds)
   __HAL_GPIO_EXTI_CLEAR_IT(REC_START_Pin);
   HAL_NVIC_ClearPendingIRQ(EXTI4_15_IRQn);
   HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
-
-  // 6. Put SPI and I2C pins into Analog No-Pull mode to prevent back-feeding current
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_9 | GPIO_PIN_10;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   // Clear any pending TIM2 interrupts at both peripheral and NVIC levels
   __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_UPDATE);
@@ -873,8 +884,9 @@ void Exit_Recording_Sleep(void)
   HAL_NVIC_EnableIRQ(LPUART1_IRQn);
   HAL_NVIC_EnableIRQ(TIM2_IRQn);
 
-  // Re-initialize SPI1 and I2C1 pin mappings
+  // Re-initialize SPI1 and I2C1 pin mappings and peripherals
   HAL_SPI_MspInit(&hspi1);
+  HAL_SPI_Init(&hspi1);
   HAL_I2C_MspInit(&hi2c1);
 
   // If we woke up due to the RTC timer expiring (the wakeup callback ran and set recording_timer_expired to 1)
@@ -889,6 +901,7 @@ void Exit_Recording_Sleep(void)
 #else
       HAL_Delay(20);
 #endif
+      HAL_I2C_Init(&hi2c1); // Reinitialize registers and state machine after stabilization!
   }
 
   // Clear pending UART flags and restart receiver interrupts
@@ -920,3 +933,5 @@ void Exit_Recording_Sleep(void)
 
   is_sleeping = false;
 }
+
+

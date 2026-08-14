@@ -2,7 +2,8 @@
 #define INC_MEMORY_H
 
 // SPI Chip Select control
-#define MEM_CS_ENABLE() HAL_GPIO_WritePin(CS_MEM_0_BAR_GPIO_Port, CS_MEM_0_BAR_Pin, GPIO_PIN_RESET)
+void MEM_CS_ENABLE_WithInit(void);
+#define MEM_CS_ENABLE() MEM_CS_ENABLE_WithInit()
 #define MEM_CS_DISABLE() HAL_GPIO_WritePin(CS_MEM_0_BAR_GPIO_Port, CS_MEM_0_BAR_Pin, GPIO_PIN_SET)
 // SPI Timeout
 #define SPI_TIMEOUT 500
