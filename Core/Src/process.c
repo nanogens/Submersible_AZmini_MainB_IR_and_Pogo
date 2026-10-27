@@ -182,39 +182,32 @@ void CTD_Reading_Processed_Resp(void)
 {
   SendHeader(CTD_READINGS_PROCESSED_RESP_MSGLGT, CTD_READINGS_PROCESSED_RESP_MSGID);
   SendByte(CTD_READINGS_PROCESSED_RESP_MSGID); // Box Selection
-  SendByte(0x00); // Reserved 0
+  SendByte(0x00);                              // Reserved 0
 
-  //SendByte(CTD.press_uc[0]);
-  //SendByte(CTD.press_uc[1]);
+  // Raw Depth (D1) - 4 bytes, MSB first
+  SendByte((D1 >> 24) & 0xFF);
+  SendByte((D1 >> 16) & 0xFF);
+  SendByte((D1 >> 8)  & 0xFF);
+  SendByte(D1 & 0xFF);
 
-  /*
-  // This is just temporary to see the Depth guage advance.
-  // Enable the block above and disable this block when done testing.
-  // Also remove the Temporary structure from globals.h
-  Temporary.temporary += 10;
-  if(Temporary.temporary > 150)
-  {
-	Temporary.temporary = 0;
-  }
-  SendByte((Temporary.temporary >> 8) & 0xFF);
-  SendByte((Temporary.temporary) & 0xFF);
-  */
-  SendByte((CTD.depth_i >> 8) & 0xFF);
-  SendByte((CTD.depth_i) & 0xFF);
+  // Raw Temperature (D2) - 4 bytes, MSB first
+  SendByte((D2 >> 24) & 0xFF);
+  SendByte((D2 >> 16) & 0xFF);
+  SendByte((D2 >> 8)  & 0xFF);
+  SendByte(D2 & 0xFF);
 
-  SendByte((CTD.temp_i >> 8) & 0xFF);
-  SendByte((CTD.temp_i) & 0xFF);
+  // Conductivity - 4 bytes (zeros placeholder)
+  SendByte(0x00);
+  SendByte(0x00);
+  SendByte(0x00);
+  SendByte(0x00);
 
-  SendByte((CTD.cond_i >> 8) & 0xFF);
-  SendByte((CTD.cond_i) & 0xFF);
-
-  SendByte(0x00); // Reserved 1 (possibly alerts)
-
-  //ReedSwitch.state = ACTIVATED;  // MT temproary
-  SendByte(ReedSwitch.state); // Reserved 2 (possibly alerts)
+  SendByte(0x00);              // Reserved 1
+  SendByte(ReedSwitch.state);  // Reed switch = ACTIVATED
 
   SendByte(Lpuart1.crcsend);
 }
+
 
 void Submersible_Info_Resp(void)
 {
